@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IndustrialFurnace", "IndustrialFurnace\IndustrialFurnace.csproj", "{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}.Debug|x86.ActiveCfg = Debug|x86
+		{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}.Debug|x86.Build.0 = Debug|x86
+		{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}.Release|Any CPU.ActiveCfg = Release|x86
+		{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}.Release|x86.ActiveCfg = Release|x86
+		{DF0B314E-DA24-4FA7-A4C8-DD283F2F357B}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {251F897A-C74C-4B1C-939D-9EA5E928B697}
+	EndGlobalSection
+EndGlobal
