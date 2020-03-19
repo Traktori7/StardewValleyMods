@@ -7,6 +7,7 @@ using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Locations;
 using StardewValley.Buildings;
+using StardewValley.Network;
 using System;
 using System.IO;
 
@@ -34,6 +35,8 @@ namespace IndustrialFurnace
         private BlueprintData blueprintData;
         private SmeltingRulesContainer newSmeltingRules;
         private ITranslationHelper i18n;
+
+        //private IndustrialFurnaceController currentlyOpenedOutput;
 
         private Texture2D furnaceOn;
         private Texture2D furnaceOff;
@@ -64,6 +67,7 @@ namespace IndustrialFurnace
 
             helper.Events.Display.RenderedWorld += this.OnRenderedWorld;
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
+            helper.Events.GameLoop.UpdateTicking += this.OnUpdate;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
             helper.Events.GameLoop.Saving += this.OnSaving;
             helper.Events.GameLoop.SaveLoaded += this.OnSaveLoaded;
@@ -73,7 +77,33 @@ namespace IndustrialFurnace
             helper.Events.Multiplayer.ModMessageReceived += this.OnModMessageReceived;
         }
 
-        
+        private void OnUpdate(object sender, UpdateTickingEventArgs e)
+        {
+            if (Game1.getFarm() is null) return;
+
+            //Monitor.Log("Update ticking event handled", LogLevel.Debug);
+
+            for (int i = 0; i < furnaceControllers.Count; i++)
+            {
+                NetMutex mutex = furnaceControllers[i].output.mutex;
+
+                if (mutex is null) return;
+
+                // Assumes the furnaces can only be built on the farm
+                mutex.Update(Game1.getFarm());
+
+                //Monitor.Log("Mutex updated", LogLevel.Debug);
+
+                if (mutex.IsLocked() && Game1.activeClickableMenu is null)
+                {
+                    mutex.ReleaseLock();
+
+                    Monitor.Log("The lock was released for furnace id: " + furnaceControllers[i].Id, LogLevel.Debug);
+                }
+            }
+        }
+
+
 
 
         /// <summary>Get whether this instance can load the initial version of the given asset.</summary>
@@ -127,6 +157,15 @@ namespace IndustrialFurnace
             }
 
             throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+        }
+
+
+        // TODO einäin!!!!!!!!!!!!!!
+        public void SendUpdateMessage()
+        {
+            // Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
+            InitializeSaveData();
+            Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new[] { this.ModManifest.UniqueID });
         }
 
 
@@ -445,16 +484,26 @@ namespace IndustrialFurnace
             furnace.output.clearNulls();
             //this.Monitor.Log("The furnace output currently has " + furnace.output.items.Count + " items", LogLevel.Debug);
 
+            this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " tries to open the output", LogLevel.Debug);
+
             // Show output chest only if it contains something
             if (furnace.output.items.Count == 0) return;
 
-            // TODO: Create new menu that prevents player from placing items inside the output chest
-            Utility.CollectSingleItemOrShowChestMenu(furnace.output, null);
-            //Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems), null, (string) null, null, false, true, true, true, false, 0, null, -1, null);
-            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
-                new ItemGrabMenu.behaviorOnItemSelect(furnace.output.grabItemFromInventory), (string)null,
-                new ItemGrabMenu.behaviorOnItemSelect(furnace.output.grabItemFromChest),
-                false, true, true, true, false, 0, null, -1, null);
+            furnace.output.mutex.RequestLock((Action)(() =>
+            {
+                this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " succeeds!", LogLevel.Debug);
+                
+                // TODO: Create new menu that prevents player from placing items inside the output chest
+                Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
+                    null, (string)null,
+                    new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer, this)),
+                    false, true, true, true, false, 1, null, -1, null);
+            }), (Action) (() =>
+            {
+                this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " fails", LogLevel.Debug);
+            }));
+
+            this.Monitor.Log("The output is locked: " + furnace.output.mutex.IsLocked() + " The output is locked by " + Game1.player.UniqueMultiplayerID + ": " + furnace.output.mutex.IsLockHeld(), LogLevel.Debug);
         }
 
 
@@ -634,12 +683,7 @@ namespace IndustrialFurnace
         }
 
 
-        private void SendUpdateMessage()
-        {
-            // Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
-            InitializeSaveData();
-            Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new[] { this.ModManifest.UniqueID });
-        }
+        
     }
 
 
