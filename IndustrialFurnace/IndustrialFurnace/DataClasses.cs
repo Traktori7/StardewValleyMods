@@ -35,7 +35,7 @@ namespace IndustrialFurnace
 
 
         /// <summary>Parses the save data from the furnace controller data</summary>
-        public void ParseControllersToModData(List<IndustrialFurnaceController> furnaces)
+        public void ParseControllersToModSaveData(List<IndustrialFurnaceController> furnaces)
         {
             for (int i = 0; i < furnaces.Count; i++)
             {
@@ -75,7 +75,7 @@ namespace IndustrialFurnace
 
 
         /// <summary>Parses the furnace controller data from the save data</summary>
-        public void ParseModDataToControllers(List<IndustrialFurnaceController> furnaces)
+        public void ParseModSaveDataToControllers(List<IndustrialFurnaceController> furnaces)
         {
             // Assume the lists are equally as long
 

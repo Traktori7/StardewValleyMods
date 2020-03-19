@@ -17,6 +17,7 @@ namespace IndustrialFurnace
     {
         private const string controllerDataSaveKey = "controller-save";
         private const string furnaceBuildingType = "Industrial Furnace";
+        private const string saveDataRefreshedMessage = "Save data refreshed";
 
         private readonly string assetPath = Path.Combine("Buildings", furnaceBuildingType);
         private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
@@ -29,7 +30,7 @@ namespace IndustrialFurnace
 
         private int furnacesBuilt = 0;      // Used to identify furnaces, placed in maxOccupants field.
         private ModConfig config;
-        private ModSaveData modData;
+        private ModSaveData modSaveData;
         private BlueprintData blueprintData;
         private SmeltingRulesContainer newSmeltingRules;
         private ITranslationHelper i18n;
@@ -69,7 +70,10 @@ namespace IndustrialFurnace
             helper.Events.GameLoop.DayStarted += this.OnDayStarted;
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
             helper.Events.World.BuildingListChanged += this.OnBuildingListChanged;
+            helper.Events.Multiplayer.ModMessageReceived += this.OnModMessageReceived;
         }
+
+        
 
 
         /// <summary>Get whether this instance can load the initial version of the given asset.</summary>
@@ -150,11 +154,30 @@ namespace IndustrialFurnace
         /// <summary></summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
+        private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
+        {
+            if (e.FromModID == this.ModManifest.UniqueID && e.Type == saveDataRefreshedMessage)
+            {
+                // Receive the save data
+                modSaveData = e.ReadAs<ModSaveData>();
+                // Refresh the furnace data
+                InitializeFurnaceControllers(false);
+
+                UpdateTextures();
+            }
+        }
+
+
+        /// <summary></summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void OnSaving(object sender, SavingEventArgs e)
         {
-            modData.ClearOldData();
-            modData.ParseControllersToModData(furnaceControllers);
-            this.Helper.Data.WriteSaveData(controllerDataSaveKey, modData);
+            if (Game1.player.IsMainPlayer)
+            {
+                InitializeSaveData();
+                this.Helper.Data.WriteSaveData(controllerDataSaveKey, modSaveData);
+            }
         }
 
 
@@ -163,31 +186,9 @@ namespace IndustrialFurnace
         /// <param name="e"></param>
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
-            // Initialize the lists to prevent data leaking from previous games
-            furnaces.Clear();
-            furnaceControllers.Clear();
-
-            // Load the saved data. If not present, initialize new
-            modData = this.Helper.Data.ReadSaveData<ModSaveData>(controllerDataSaveKey);
-            if (modData is null) modData = new ModSaveData();
-            else
+            if (Game1.player.IsMainPlayer)
             {
-                modData.ParseModDataToControllers(furnaceControllers);
-            }
-
-            // Update furnacesBuilt counter to match the highest id of built furnaces (+1)
-            int highestId = -1;
-            for (int i = 0; i < furnaceControllers.Count; i++)
-            {
-                if (furnaceControllers[i].Id > highestId) highestId = furnaceControllers[i].Id;
-            }
-            furnacesBuilt = highestId + 1;
-
-            // Repopulate the list of furnaces, only checks the farm!
-            foreach (Building building in ((BuildableGameLocation)Game1.getFarm()).buildings)
-            {
-                if (IsBuildingIndustrialFurnace(building))
-                    furnaces.Add(building);
+                InitializeFurnaceControllers(true);
             }
         }
 
@@ -221,6 +222,8 @@ namespace IndustrialFurnace
                     if (tile.X == building.tileX.Value + 1 && tile.Y == building.tileY.Value + 1)
                     {
                         PlaceItemsToTheFurnace(furnace, building);
+                        
+                        SendUpdateMessage();
                     }
                     // The output chest of the furnace
                     else if (tile.X == building.tileX.Value + 3 && tile.Y == building.tileY.Value + 1)
@@ -237,13 +240,18 @@ namespace IndustrialFurnace
         /// <param name="e">The event arguments.</param>
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
-            // Finish smelting items
-            foreach (IndustrialFurnaceController furnace in furnaceControllers)
+            if (Game1.player.IsMainPlayer)
             {
-                if (furnace.CurrentlyOn)
+                // Finish smelting items
+                foreach (IndustrialFurnaceController furnace in furnaceControllers)
                 {
-                    FinishSmelting(furnace);
+                    if (furnace.CurrentlyOn)
+                    {
+                        FinishSmelting(furnace);
+                    }
                 }
+
+                SendUpdateMessage();
             }
         }
 
@@ -443,6 +451,10 @@ namespace IndustrialFurnace
             // TODO: Create new menu that prevents player from placing items inside the output chest
             Utility.CollectSingleItemOrShowChestMenu(furnace.output, null);
             //Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems), null, (string) null, null, false, true, true, true, false, 0, null, -1, null);
+            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
+                new ItemGrabMenu.behaviorOnItemSelect(furnace.output.grabItemFromInventory), (string)null,
+                new ItemGrabMenu.behaviorOnItemSelect(furnace.output.grabItemFromChest),
+                false, true, true, true, false, 0, null, -1, null);
         }
 
 
@@ -538,6 +550,23 @@ namespace IndustrialFurnace
         }
 
 
+        private void UpdateTextures()
+        {
+            for (int i = 0; i < furnaceControllers.Count; i++)
+            {
+                int id = furnaceControllers[i].Id;
+
+                foreach (Building building in furnaces)
+                {
+                    if (building.maxOccupants.Value == id)
+                    {
+                        UpdateTexture(building, furnaceControllers[i].CurrentlyOn);
+                    }
+                }
+            }
+        }
+
+
         /// <summary>Displays a HUD message of defined type with a possible sound effect</summary>
         /// <param name="s">Displayed message</param>
         /// <param name="type">Message type</param>
@@ -557,6 +586,59 @@ namespace IndustrialFurnace
         {
             // Remove rules that depend on not installed mods
             newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID != null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
+        }
+
+
+        /// <summary>Update the furnace data from the save data</summary>
+        private void InitializeFurnaceControllers(bool readSaveData)
+        {
+            // Initialize the lists to prevent data leaking from previous games
+            furnaces.Clear();
+            furnaceControllers.Clear();
+
+            // Load the saved data. If not present, initialize new
+            if (readSaveData)
+                modSaveData = this.Helper.Data.ReadSaveData<ModSaveData>(controllerDataSaveKey);
+
+            if (modSaveData is null)
+            {
+                modSaveData = new ModSaveData();
+            }
+            else
+            {
+                modSaveData.ParseModSaveDataToControllers(furnaceControllers);
+            }
+
+            // Update furnacesBuilt counter to match the highest id of built furnaces (+1)
+            int highestId = -1;
+            for (int i = 0; i < furnaceControllers.Count; i++)
+            {
+                if (furnaceControllers[i].Id > highestId) highestId = furnaceControllers[i].Id;
+            }
+            furnacesBuilt = highestId + 1;
+
+            // Repopulate the list of furnaces, only checks the farm!
+            foreach (Building building in ((BuildableGameLocation)Game1.getFarm()).buildings)
+            {
+                if (IsBuildingIndustrialFurnace(building))
+                    furnaces.Add(building);
+            }
+        }
+
+
+        /// <summary>Update the save data to match the controllers data</summary>
+        private void InitializeSaveData()
+        {
+            modSaveData.ClearOldData();
+            modSaveData.ParseControllersToModSaveData(furnaceControllers);
+        }
+
+
+        private void SendUpdateMessage()
+        {
+            // Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
+            InitializeSaveData();
+            Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new[] { this.ModManifest.UniqueID });
         }
     }
 
