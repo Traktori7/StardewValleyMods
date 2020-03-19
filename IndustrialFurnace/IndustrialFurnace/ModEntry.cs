@@ -19,6 +19,7 @@ namespace IndustrialFurnace
         private const string controllerDataSaveKey = "controller-save";
         private const string furnaceBuildingType = "Industrial Furnace";
         private const string saveDataRefreshedMessage = "Save data refreshed";
+        private const string requestSaveData = "Request save data";
 
         private readonly string assetPath = Path.Combine("Buildings", furnaceBuildingType);
         private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
@@ -27,7 +28,6 @@ namespace IndustrialFurnace
         private readonly string furnaceOffTexturePath = Path.Combine("assets", "IndustrialFurnaceOff.png");
         private readonly string blueprintDataPath = Path.Combine("assets", "IndustrialFurnaceBlueprint.json");
         private readonly string smeltingRulesDataPath = Path.Combine("assets", "SmeltingRules.json");
-
 
         private int furnacesBuilt = 0;      // Used to identify furnaces, placed in maxOccupants field.
         private ModConfig config;
@@ -69,6 +69,7 @@ namespace IndustrialFurnace
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
             helper.Events.GameLoop.UpdateTicking += this.OnUpdate;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
+            helper.Events.GameLoop.ReturnedToTitle += this.OnReturnedToTitle;
             helper.Events.GameLoop.Saving += this.OnSaving;
             helper.Events.GameLoop.SaveLoaded += this.OnSaveLoaded;
             helper.Events.GameLoop.DayStarted += this.OnDayStarted;
@@ -76,34 +77,6 @@ namespace IndustrialFurnace
             helper.Events.World.BuildingListChanged += this.OnBuildingListChanged;
             helper.Events.Multiplayer.ModMessageReceived += this.OnModMessageReceived;
         }
-
-        private void OnUpdate(object sender, UpdateTickingEventArgs e)
-        {
-            if (Game1.getFarm() is null) return;
-
-            //Monitor.Log("Update ticking event handled", LogLevel.Debug);
-
-            for (int i = 0; i < furnaceControllers.Count; i++)
-            {
-                NetMutex mutex = furnaceControllers[i].output.mutex;
-
-                if (mutex is null) return;
-
-                // Assumes the furnaces can only be built on the farm
-                mutex.Update(Game1.getFarm());
-
-                //Monitor.Log("Mutex updated", LogLevel.Debug);
-
-                if (mutex.IsLocked() && Game1.activeClickableMenu is null)
-                {
-                    mutex.ReleaseLock();
-
-                    Monitor.Log("The lock was released for furnace id: " + furnaceControllers[i].Id, LogLevel.Debug);
-                }
-            }
-        }
-
-
 
 
         /// <summary>Get whether this instance can load the initial version of the given asset.</summary>
@@ -160,7 +133,7 @@ namespace IndustrialFurnace
         }
 
 
-        // TODO einäin!!!!!!!!!!!!!!
+        /// <summary>Sends a message for all connected players the updated save data. TODO: Exclude the sender?</summary>
         public void SendUpdateMessage()
         {
             // Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
@@ -172,6 +145,86 @@ namespace IndustrialFurnace
         /*********
         ** Private methods
         *********/
+        /// <summary></summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnUpdate(object sender, UpdateTickingEventArgs e)
+        {
+            if (Game1.getFarm() is null) return;
+
+            // Create the smoke effect every 0.5 seconds on active furnaces
+            if (e.IsMultipleOf(30))
+            {
+                GameLocation location = Game1.player.currentLocation;
+
+                if (location != null && location.IsFarm && location.IsOutdoors)
+                {
+                    for (int i = 0; i < furnaces.Count; i++)
+                    {
+                        if (!furnaceControllers[GetIndexOfFurnaceControllerWithTag(furnaces[i].maxOccupants.Value)].CurrentlyOn) continue;
+
+                        int x = furnaces[i].tileX.Value;
+                        int y = furnaces[i].tileY.Value;
+
+                        // Add smoke sprites
+                        location.temporarySprites.Add(new TemporaryAnimatedSprite(Path.Combine("LooseSprites", "Cursors"),
+                            new Rectangle(372, 1956, 10, 10),
+                            new Vector2(x * 64 + 64 + 4, y * 64 - 64),
+                            false, 1f / 500f, Color.Gray)
+                        {
+                            alpha = 0.75f,
+                            motion = new Vector2(0.0f, -0.5f),
+                            acceleration = new Vector2(1f / 500f, 0.0f),
+                            interval = 99999f,
+                            layerDepth = 1f,
+                            scale = 2f,
+                            scaleChange = 0.02f,
+                            rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
+                        });
+
+                        // Spark only randomly
+                        if (Game1.random.NextDouble() >= 0.2) continue;
+
+                        // Add sparks
+                        location.temporarySprites.Add(new TemporaryAnimatedSprite(30,
+                            new Vector2(x,y) * 64f + new Vector2(64.0f + (float)Game1.random.NextDouble() * 32.0f - 16.0f, 18f + (float)Game1.random.NextDouble() * 8.0f - 4.0f),
+                            Color.White, 4, false, 100f, 10, 64, (float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0), -1, 0)
+                        {
+                            alphaFade = 0.005f,
+                            light = true,
+                            lightcolor = Color.Black
+                        });
+
+                        // Puff only randomlierly
+                        if (Game1.random.NextDouble() >= 0.05) continue;
+                        Game1.playSound("fireball");
+                    }
+                }
+            }
+
+            //Monitor.Log("Update ticking event handled", LogLevel.Debug);
+
+            /*for (int i = 0; i < furnaceControllers.Count; i++)
+            {
+                NetMutex mutex = furnaceControllers[i].output.mutex;
+
+                if (mutex is null) return;
+
+                // Assumes the furnaces can only be built on the farm
+                mutex.Update(Game1.getFarm());
+
+                //Monitor.Log("Mutex updated", LogLevel.Debug);
+
+                if (mutex.IsLocked() && Game1.activeClickableMenu is null)
+                {
+                    mutex.ReleaseLock();
+
+                    Monitor.Log("The lock was released for furnace id: " + furnaceControllers[i].ID, LogLevel.Debug);
+                }
+            }*/
+        }
+
+
         /// <summary></summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -190,19 +243,36 @@ namespace IndustrialFurnace
         }
 
 
+        private void OnReturnedToTitle(object sender, ReturnedToTitleEventArgs e)
+        {
+            // Reset stuff
+            modSaveData = null;
+            furnaces.Clear();
+            furnaceControllers.Clear();
+        }
+
+
         /// <summary></summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
         {
-            if (e.FromModID == this.ModManifest.UniqueID && e.Type == saveDataRefreshedMessage)
+            if (e.FromModID == ModManifest.UniqueID)
             {
-                // Receive the save data
-                modSaveData = e.ReadAs<ModSaveData>();
-                // Refresh the furnace data
-                InitializeFurnaceControllers(false);
+                if (e.Type == saveDataRefreshedMessage)
+                {
+                    // Receive the save data
+                    modSaveData = e.ReadAs<ModSaveData>();
+                    // Refresh the furnace data
+                    InitializeFurnaceControllers(false);
 
-                UpdateTextures();
+                    UpdateTextures();
+                }
+                else if (e.Type == requestSaveData)
+                {
+                    RequestSaveData request = e.ReadAs<RequestSaveData>();
+                    Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new string[] { ModManifest.UniqueID }, new long[] { request.PlayerID });
+                }
             }
         }
 
@@ -228,6 +298,7 @@ namespace IndustrialFurnace
             if (Game1.player.IsMainPlayer)
             {
                 InitializeFurnaceControllers(true);
+                //Monitor.Log("OnSaveLoaded IsMainPlayer check passed", LogLevel.Debug);
             }
         }
 
@@ -261,6 +332,7 @@ namespace IndustrialFurnace
                     if (tile.X == building.tileX.Value + 1 && tile.Y == building.tileY.Value + 1)
                     {
                         PlaceItemsToTheFurnace(furnace, building);
+                        Game1.playSound("coin");
                         
                         SendUpdateMessage();
                     }
@@ -291,6 +363,10 @@ namespace IndustrialFurnace
                 }
 
                 SendUpdateMessage();
+            }
+            else if (modSaveData is null)
+            {
+                Helper.Multiplayer.SendMessage<RequestSaveData>(new RequestSaveData(Game1.player.UniqueMultiplayerID), requestSaveData, new string[] { ModManifest.UniqueID });
             }
         }
 
@@ -484,12 +560,13 @@ namespace IndustrialFurnace
             furnace.output.clearNulls();
             //this.Monitor.Log("The furnace output currently has " + furnace.output.items.Count + " items", LogLevel.Debug);
 
-            this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " tries to open the output", LogLevel.Debug);
+            //this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " tries to open the output", LogLevel.Debug);
 
             // Show output chest only if it contains something
             if (furnace.output.items.Count == 0) return;
 
-            furnace.output.mutex.RequestLock((Action)(() =>
+            // Under construction logic for the mutex
+            /*furnace.output.mutex.RequestLock((Action)(() =>
             {
                 this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " succeeds!", LogLevel.Debug);
                 
@@ -501,9 +578,15 @@ namespace IndustrialFurnace
             }), (Action) (() =>
             {
                 this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " fails", LogLevel.Debug);
-            }));
+            }));*/
 
-            this.Monitor.Log("The output is locked: " + furnace.output.mutex.IsLocked() + " The output is locked by " + Game1.player.UniqueMultiplayerID + ": " + furnace.output.mutex.IsLockHeld(), LogLevel.Debug);
+            // Display the menu for the output chest
+            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
+                    null, (string)null,
+                    new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer, this)),
+                    false, true, true, true, false, 1, null, -1, null);
+
+            //this.Monitor.Log("The output is locked: " + furnace.output.mutex.IsLocked() + " The output is locked by " + Game1.player.UniqueMultiplayerID + ": " + furnace.output.mutex.IsLockHeld(), LogLevel.Debug);
         }
 
 
@@ -553,10 +636,11 @@ namespace IndustrialFurnace
             // Update the texture of the furnace
             foreach (Building building in furnaces)
             {
-                if (building.maxOccupants.Value == furnace.Id)
+                if (building.maxOccupants.Value == furnace.ID)
                     UpdateTexture(building, false);
             }
         }
+
 
         /// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
         private bool IsBuildingIndustrialFurnace(Building building)
@@ -573,7 +657,7 @@ namespace IndustrialFurnace
             for (int i = 0; i < furnaceControllers.Count; i++)
             {
                 // Assumes the furnace has been added to the list once
-                if (furnaceControllers[i].Id == tag)
+                if (furnaceControllers[i].ID == tag)
                 {
                     return i;
                 }
@@ -599,11 +683,12 @@ namespace IndustrialFurnace
         }
 
 
+        /// <summary>Updates the textures of all furnaces. Used to sync with multiplayer save data changes.</summary>
         private void UpdateTextures()
         {
             for (int i = 0; i < furnaceControllers.Count; i++)
             {
-                int id = furnaceControllers[i].Id;
+                int id = furnaceControllers[i].ID;
 
                 foreach (Building building in furnaces)
                 {
@@ -631,9 +716,9 @@ namespace IndustrialFurnace
         }
 
 
+        /// <summary>Remove rules that depend on not installed mods</summary>
         private void CheckSmeltingRules()
         {
-            // Remove rules that depend on not installed mods
             newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID != null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
         }
 
@@ -662,7 +747,7 @@ namespace IndustrialFurnace
             int highestId = -1;
             for (int i = 0; i < furnaceControllers.Count; i++)
             {
-                if (furnaceControllers[i].Id > highestId) highestId = furnaceControllers[i].Id;
+                if (furnaceControllers[i].ID > highestId) highestId = furnaceControllers[i].ID;
             }
             furnacesBuilt = highestId + 1;
 
@@ -681,9 +766,6 @@ namespace IndustrialFurnace
             modSaveData.ClearOldData();
             modSaveData.ParseControllersToModSaveData(furnaceControllers);
         }
-
-
-        
     }
 
 

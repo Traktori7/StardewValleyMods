@@ -39,7 +39,7 @@ namespace IndustrialFurnace
         {
             for (int i = 0; i < furnaces.Count; i++)
             {
-                FurnaceControllerId.Add(furnaces[i].Id);
+                FurnaceControllerId.Add(furnaces[i].ID);
                 FurnaceControllerCurrentlyOn.Add(furnaces[i].CurrentlyOn);
 
                 Dictionary<int, int> inputChest = new Dictionary<int, int>();
