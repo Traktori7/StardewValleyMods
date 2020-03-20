@@ -36,6 +36,8 @@ namespace IndustrialFurnace
         private SmeltingRulesContainer newSmeltingRules;
         private ITranslationHelper i18n;
 
+        private int currentlyLookingAtFurnace = -1;
+
         //private IndustrialFurnaceController currentlyOpenedOutput;
 
         private Texture2D furnaceOn;
@@ -266,6 +268,12 @@ namespace IndustrialFurnace
                     // Refresh the furnace data
                     InitializeFurnaceControllers(false);
 
+                    // If we have a menu open and we're looking at a furnace, the menu is most likely the output menu. Redraw it!
+                    if (Game1.activeClickableMenu != null && currentlyLookingAtFurnace != -1)
+                    {
+                        DrawOutputMenu(furnaceControllers[GetIndexOfFurnaceControllerWithTag(currentlyLookingAtFurnace)]);
+                    }
+
                     UpdateTextures();
                 }
                 else if (e.Type == requestSaveData)
@@ -426,6 +434,11 @@ namespace IndustrialFurnace
                     maxOccupants = furnacesBuilt,
                 });
             }
+            // If a menu was closed, reset the currently looked at furnace, just in case.
+            else if (Game1.activeClickableMenu is null)
+            {
+                currentlyLookingAtFurnace = -1;
+            }
         }
 
 
@@ -580,11 +593,8 @@ namespace IndustrialFurnace
                 this.Monitor.Log("Player " + Game1.player.UniqueMultiplayerID + " fails", LogLevel.Debug);
             }));*/
 
-            // Display the menu for the output chest
-            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
-                    null, (string)null,
-                    new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer, this)),
-                    false, true, true, true, false, 1, null, -1, null);
+            currentlyLookingAtFurnace = furnace.ID;
+            DrawOutputMenu(furnace);
 
             //this.Monitor.Log("The output is locked: " + furnace.output.mutex.IsLocked() + " The output is locked by " + Game1.player.UniqueMultiplayerID + ": " + furnace.output.mutex.IsLockHeld(), LogLevel.Debug);
         }
@@ -757,6 +767,16 @@ namespace IndustrialFurnace
                 if (IsBuildingIndustrialFurnace(building))
                     furnaces.Add(building);
             }
+        }
+
+
+        private void DrawOutputMenu(IndustrialFurnaceController furnace)
+        {
+            // Display the menu for the output chest
+            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true, new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
+                    null, (string)null,
+                    new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer, this)),
+                    false, true, true, true, false, 1, null, -1, null);
         }
 
 
