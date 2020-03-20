@@ -8,4 +8,8 @@
 	// the dimensions of the sprite
 	"SpriteSizeX": 10,
 	"SpriteSizeY": 10,
+	// the scale factor for the smoke sprite size
+	"SmokeScale": 2,
+	// the rate of change in the scale per frame
+	"SmokeScaleChange": 0.02
 }

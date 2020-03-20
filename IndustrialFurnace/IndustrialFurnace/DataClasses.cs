@@ -222,6 +222,8 @@ namespace IndustrialFurnace
         public int SpawnYOffset { get; set; }
         public int SpriteSizeX { get; set; }
         public int SpriteSizeY { get; set; }
+        public float SmokeScale { get; set; }
+        public float SmokeScaleChange { get; set; }
     }
 
 

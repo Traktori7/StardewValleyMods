@@ -17,7 +17,7 @@ namespace IndustrialFurnace
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod, IAssetEditor, IAssetLoader
     {
-        private const int lightSourceIDMultiplier = 87000;
+        private const int lightSourceIDMultiplier = 14097000;
         private const string controllerDataSaveKey = "controller-save";
         private const string furnaceBuildingType = "Industrial Furnace";
         private const string saveDataRefreshedMessage = "Save data refreshed";
@@ -233,8 +233,8 @@ namespace IndustrialFurnace
                                 acceleration = new Vector2(1f / 500f, 0.0f),
                                 interval = 99999f,
                                 layerDepth = 1f,
-                                scale = 2f,
-                                scaleChange = 0.02f,
+                                scale = smokeAnimationData.SmokeScale,
+                                scaleChange = smokeAnimationData.SmokeScaleChange,
                                 rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
                             };
                         }
@@ -250,8 +250,8 @@ namespace IndustrialFurnace
                                 acceleration = new Vector2(1f / 500f, 0.0f),
                                 interval = 99999f,
                                 layerDepth = 1f,
-                                scale = 2f,
-                                scaleChange = 0.02f,
+                                scale = smokeAnimationData.SmokeScale,
+                                scaleChange = smokeAnimationData.SmokeScaleChange,
                                 rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
                             };
                         }
