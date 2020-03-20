@@ -1,7 +1,7 @@
 {
 	"Name": "Industrial Furnace",
 	"Author": "Traktori",
-	"Version": "1.2.0",
+	"Version": "1.3.0",
 	"Description": "A giant furnace capable of smelting multiple ores at once.",
 	"UniqueID": "Traktori.IndustrialFurnace",
 	"EntryDll": "IndustrialFurnace.dll",

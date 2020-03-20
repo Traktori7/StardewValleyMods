@@ -1,6 +1,7 @@
 ﻿using StardewValley;
 using StardewValley.Objects;
 using StardewValley.Menus;
+using StardewValley.Buildings;
 using System;
 using Netcode;
 
@@ -16,6 +17,9 @@ namespace IndustrialFurnace
 
         public Chest input = new Chest();
         public Chest output = new Chest();
+
+        public Building furnace;
+        public LightSource lightSource;
 
 
         public IndustrialFurnaceController(int tag, bool currentlyOn)

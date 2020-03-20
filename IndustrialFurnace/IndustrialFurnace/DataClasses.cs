@@ -213,4 +213,33 @@ namespace IndustrialFurnace
         public int OutputItemAmount { get; set; }
         public string RequiredModID { get; set; }
     }
+
+
+    public class SmokeAnimationData
+    {
+        public uint SpawnFrequency { get; set; }
+        public int SpawnXOffset { get; set; }
+        public int SpawnYOffset { get; set; }
+        public int SpriteSizeX { get; set; }
+        public int SpriteSizeY { get; set; }
+    }
+
+
+    public class FireAnimationData
+    {
+        public uint SpawnFrequency { get; set; }
+        public float SpawnChance { get; set; }
+        public int SpawnXOffset { get; set; }
+        public int SpawnYOffset { get; set; }
+        public int SpawnXRandomOffset { get; set; }
+        public int SpawnYRandomOffset { get; set; }
+        public int SpriteSizeX { get; set; }
+        public int SpriteSizeY { get; set; }
+        public int AnimationSpeed { get; set; }
+        public int AnimationLength { get; set; }
+        public float SoundEffectChance { get; set; }
+        public int LightSourceXOffset { get; set; }
+        public int LightSourceYOffset { get; set; }
+        public float LightSourceScaleMultiplier { get; set; }
+    }
 }

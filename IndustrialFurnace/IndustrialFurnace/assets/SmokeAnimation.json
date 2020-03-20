@@ -1,0 +1,11 @@
+{
+	// the offset scale: 64 is one tile
+	// time between spawns in milliseconds
+	"SpawnFrequency": 500,
+	// spawnpoint offset from the building's point
+	"SpawnXOffset": 68,
+	"SpawnYOffset": -64,
+	// the dimensions of the sprite
+	"SpriteSizeX": 10,
+	"SpriteSizeY": 10,
+}
