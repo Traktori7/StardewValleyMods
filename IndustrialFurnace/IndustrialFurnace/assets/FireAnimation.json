@@ -1,5 +1,6 @@
 {
 	// the offset scale: 64 is one tile
+	"Enabled": true,
 	// time between spawn attempts in milliseconds
 	"SpawnFrequency": 500,		
 	// chance to spawn each try

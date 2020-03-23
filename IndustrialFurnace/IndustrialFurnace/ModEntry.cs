@@ -26,8 +26,8 @@ namespace IndustrialFurnace
         private readonly string assetPath = Path.Combine("Buildings", furnaceBuildingType);
         private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
 
-        private readonly string furnaceOnTexturePath = Path.Combine("assets", "IndustrialFurnaceOn.png");
-        private readonly string furnaceOffTexturePath = Path.Combine("assets", "IndustrialFurnaceOff.png");
+        // Use a default texture, so the SMAPI won't freak out if exiting to menu
+        private readonly string defaultFurnaceTexturePath = Path.Combine("assets", "IndustrialFurnaceOff.png");
         private readonly string blueprintDataPath = Path.Combine("assets", "IndustrialFurnaceBlueprint.json");
         private readonly string smeltingRulesDataPath = Path.Combine("assets", "SmeltingRules.json");
         private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
@@ -47,9 +47,8 @@ namespace IndustrialFurnace
         private Texture2D furnaceOn;
         private Texture2D furnaceOff;
 
-        private Texture2D testSprite;
-        private bool customSmokeSpriteExists = true;
-        private bool customFireSpriteExists = true;
+        private bool customSmokeSpriteExists = false;
+        private bool customFireSpriteExists = false;
 
         private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
         private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
@@ -65,30 +64,24 @@ namespace IndustrialFurnace
         public override void Entry(IModHelper helper)
         {
             i18n = helper.Translation;
-            
-            // Load the two textures
-            furnaceOn = helper.Content.Load<Texture2D>(furnaceOnTexturePath);
-            furnaceOff = helper.Content.Load<Texture2D>(furnaceOffTexturePath);
 
             // Check if there exists a custom sprite for the smoke
-            try
+            if (File.Exists(Path.Combine(helper.DirectoryPath, smokeAnimationSpritePath)))
             {
-                testSprite = helper.Content.Load<Texture2D>(smokeAnimationSpritePath, ContentSource.ModFolder);
+                customSmokeSpriteExists = true;
             }
-            catch(ContentLoadException)
+            else
             {
-                customSmokeSpriteExists = false;
                 Monitor.Log("Custom sprite for the smoke was not found. Using the default.", LogLevel.Debug);
             }
 
             // Check if there exists a custom sprite for the fire
-            try
+            if (File.Exists(Path.Combine(helper.DirectoryPath, fireAnimationSpritePath)))
             {
-                testSprite = helper.Content.Load<Texture2D>(fireAnimationSpritePath, ContentSource.ModFolder);
+                customFireSpriteExists = true;
             }
-            catch (ContentLoadException)
+            else
             {
-                customFireSpriteExists = false;
                 Monitor.Log("Custom sprite for the fire was not found. Using the default.", LogLevel.Debug);
             }
 
@@ -143,7 +136,7 @@ namespace IndustrialFurnace
         {
             if (asset.AssetNameEquals(assetPath))
             {
-                return this.Helper.Content.Load<T>(furnaceOffTexturePath, ContentSource.ModFolder);
+                return this.Helper.Content.Load<T>(defaultFurnaceTexturePath, ContentSource.ModFolder);
             }
             else if (asset.AssetNameEquals(smokeAnimationSpritePath))
             {
@@ -198,14 +191,13 @@ namespace IndustrialFurnace
         /*********
         ** Private methods
         *********/
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised before/after the game state is updated</summary>
         private void OnUpdate(object sender, UpdateTickingEventArgs e)
         {
             if (Game1.getFarm() is null) return;
 
-            if (e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
+            // Create a smoke sprite
+            if (smokeAnimationData.Enabled && e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
             {
                 GameLocation location = Game1.player.currentLocation;
 
@@ -261,7 +253,8 @@ namespace IndustrialFurnace
                     }
                 }
             }
-            if (e.IsMultipleOf(fireAnimationData.SpawnFrequency * 60 / 1000))
+            // Create a fire sprite
+            if (fireAnimationData.Enabled && e.IsMultipleOf(fireAnimationData.SpawnFrequency * 60 / 1000))
             {
                 GameLocation location = Game1.player.currentLocation;
 
@@ -335,9 +328,7 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised after the game is launched, right before the first update tick.</summary>
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
         {
             // Integration for Generic Mod Config Menu by spacechase0
@@ -353,6 +344,7 @@ namespace IndustrialFurnace
         }
 
 
+        /// <summary>Raised after the game returns to the title screen.</summary>
         private void OnReturnedToTitle(object sender, ReturnedToTitleEventArgs e)
         {
             // Reset stuff
@@ -362,9 +354,7 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised after a mod message is received over the network.</summary>
         private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
         {
             if (e.FromModID == ModManifest.UniqueID)
@@ -394,9 +384,7 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised before/after the game writes data to save file.</summary>
         private void OnSaving(object sender, SavingEventArgs e)
         {
             if (Game1.player.IsMainPlayer)
@@ -407,11 +395,10 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).</summary>
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
+            // Only the person hosting the world loads the furnace controllers' state from the save
             if (Game1.player.IsMainPlayer)
             {
                 InitializeFurnaceControllers(true);
@@ -420,8 +407,6 @@ namespace IndustrialFurnace
 
 
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event data.</param>
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
             // Ignore if player hasn't loaded in yet, or is stuck in a menu or cutscene
@@ -459,10 +444,13 @@ namespace IndustrialFurnace
 
 
         /// <summary>The event called when the day starts.</summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event arguments.</param>
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
+            // Refresh the textures
+            furnaceOn = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("On")));
+            furnaceOff = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("Off")));
+
+
             if (Game1.player.IsMainPlayer)
             {
                 // Finish smelting items
@@ -483,9 +471,7 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised after buildings are added/removed in any location.</summary>
         private void OnBuildingListChanged(object sender, BuildingListChangedEventArgs e)
         {
             // Add added furnaces to the controller list
@@ -521,8 +507,6 @@ namespace IndustrialFurnace
 
 
         /// <summary>The event called after an active menu is opened or closed.</summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event arguments.</param>
         private void OnMenuChanged(object sender, MenuChangedEventArgs e)
         {
             // Add the blueprint
@@ -546,9 +530,8 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Raised after the game world is drawn to the sprite patch, before it's rendered to the screen.
+        /// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.</summary>
         private void OnRenderedWorld(object sender, RenderedWorldEventArgs e)
         {
             
@@ -587,9 +570,16 @@ namespace IndustrialFurnace
         }
 
 
+        /// <summary>Raised after the current player moves to a new location.</summary>
+        private void OnWarped(object sender, WarpedEventArgs e)
+        {
+            if (e.IsLocalPlayer)
+                UpdateFurnaceLights();
+        }
+
+
         /// <summary>Place items to the furnace</summary>
         /// <param name="furnace">The furnace controller</param>
-        /// <param name="building">The real building</param>
         private void PlaceItemsToTheFurnace(IndustrialFurnaceController furnace)
         {
             //this.Monitor.Log($"{Game1.player.Name} tried to smelt something.", LogLevel.Debug);
@@ -665,6 +655,8 @@ namespace IndustrialFurnace
         }
 
 
+        /// <summary>Called when the player tries to interact with the output chest</summary>
+        /// <param name="furnace">The furnace controller that's being interacted with</param>
         private void CollectItemsFromTheFurnace(IndustrialFurnaceController furnace)
         {
             // Clear the output of removed items
@@ -678,6 +670,8 @@ namespace IndustrialFurnace
         }
 
 
+        /// <summary></summary>
+        /// <param name="furnace"></param>
         private void FinishSmelting(IndustrialFurnaceController furnace)
         {
             // TODO: Add checks to prevent loss of items, since it is possible that 'output amount' > 'input amount'
@@ -916,10 +910,18 @@ namespace IndustrialFurnace
         }
 
 
-        private void OnWarped(object sender, WarpedEventArgs e)
+        /// <summary>Get the texture name, checks for seasonal textures</summary>
+        /// <param name="state">The state of the furnace, either "On" or "Off"</param>
+        private string GetTexturePath(string state)
         {
-            if (e.IsLocalPlayer)
-                UpdateFurnaceLights();
+            string textureName = $"{Game1.currentSeason}_IndustrialFurnace{state}.png";
+
+            if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", textureName)))
+            {
+                return textureName;
+            }
+
+            return $"IndustrialFurnace{state}.png";
         }
     }
 

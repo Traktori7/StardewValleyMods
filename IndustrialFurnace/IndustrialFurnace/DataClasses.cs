@@ -217,6 +217,7 @@ namespace IndustrialFurnace
 
     public class SmokeAnimationData
     {
+        public bool Enabled { get; set; }
         public uint SpawnFrequency { get; set; }
         public int SpawnXOffset { get; set; }
         public int SpawnYOffset { get; set; }
@@ -229,6 +230,7 @@ namespace IndustrialFurnace
 
     public class FireAnimationData
     {
+        public bool Enabled { get; set; }
         public uint SpawnFrequency { get; set; }
         public float SpawnChance { get; set; }
         public int SpawnXOffset { get; set; }
