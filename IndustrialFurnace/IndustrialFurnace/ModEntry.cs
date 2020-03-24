@@ -72,7 +72,7 @@ namespace IndustrialFurnace
             }
             else
             {
-                Monitor.Log("Custom sprite for the smoke was not found. Using the default.", LogLevel.Debug);
+                Monitor.Log("Custom sprite for the smoke was not found. Using the default.");
             }
 
             // Check if there exists a custom sprite for the fire
@@ -82,7 +82,7 @@ namespace IndustrialFurnace
             }
             else
             {
-                Monitor.Log("Custom sprite for the fire was not found. Using the default.", LogLevel.Debug);
+                Monitor.Log("Custom sprite for the fire was not found. Using the default.");
             }
 
             this.config = helper.ReadConfig<ModConfig>();
@@ -918,9 +918,11 @@ namespace IndustrialFurnace
 
             if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", textureName)))
             {
+                Monitor.Log($"Using the texture for {Game1.currentSeason}.");
                 return textureName;
             }
 
+            Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
             return $"IndustrialFurnace{state}.png";
         }
     }
