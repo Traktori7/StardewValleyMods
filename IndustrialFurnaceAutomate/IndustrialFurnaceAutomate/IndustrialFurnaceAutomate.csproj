@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>IndustrialFurnaceAutomate</AssemblyName>
+    <RootNamespace>IndustrialFurnaceAutomate</RootNamespace>
+    <Version>1.0.0</Version>
+    <TargetFramework>net452</TargetFramework>
+    <Platforms>x86</Platforms>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Automate">
+      <HintPath>..\..\..\StardewValleyModding\Automate.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="IndustrialFurnace">
+      <HintPath>..\..\IndustrialFurnace\IndustrialFurnace\bin\x86\Release\net452\IndustrialFurnace.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

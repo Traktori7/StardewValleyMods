@@ -108,7 +108,13 @@ namespace IndustrialFurnace
             helper.Events.Player.Warped += this.OnWarped;
         }
 
-        
+
+        public override object GetApi()
+        {
+            return new IndustrialFurnaceAPI(this);
+        }
+
+
         /// <summary>Get whether this instance can load the initial version of the given asset.</summary>
         /// <param name="asset">Basic metadata about the asset being loaded.</param>
         public bool CanLoad<T>(IAssetInfo asset)
@@ -185,6 +191,33 @@ namespace IndustrialFurnace
             // Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
             InitializeSaveData();
             Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new[] { this.ModManifest.UniqueID });
+        }
+
+
+        /// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
+        public bool IsBuildingIndustrialFurnace(Building building)
+        {
+            return building.buildingType.Value.Equals(furnaceBuildingType);
+        }
+
+
+        public IndustrialFurnaceController GetController(int ID)
+        {
+            int index = GetIndexOfFurnaceControllerWithTag(ID);
+
+            if (index > -1)
+            {
+                try
+                {
+                    return furnaces[index];
+                }
+                catch (Exception)
+                {
+                    Monitor.Log($"Trying to access invalid furnace controller with ID {ID}", LogLevel.Error);
+                }
+            }
+
+            return null;
         }
 
 
@@ -480,7 +513,7 @@ namespace IndustrialFurnace
                 if (IsBuildingIndustrialFurnace(building))
                 {
                     // Add the controller that takes care of the functionality of the furnace
-                    IndustrialFurnaceController controller = new IndustrialFurnaceController(furnacesBuilt, false)
+                    IndustrialFurnaceController controller = new IndustrialFurnaceController(furnacesBuilt, false, this)
                     {
                         furnace = building
                     };
@@ -720,13 +753,6 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
-        private bool IsBuildingIndustrialFurnace(Building building)
-        {
-            return building.buildingType.Value.Equals(furnaceBuildingType);
-        }
-
-
         /// <summary>Returns the index of the matching controller in the furnaces list</summary>
         /// <param name="tag">The tag of searched furnace controller</param>
         /// <returns>Either the index or -1 if no tag matches are found</returns>
@@ -864,7 +890,7 @@ namespace IndustrialFurnace
             }
             else
             {
-                modSaveData.ParseModSaveDataToControllers(furnaces);
+                modSaveData.ParseModSaveDataToControllers(furnaces, this);
             }
 
             // Update furnacesBuilt counter to match the highest id of built furnaces (+1)
@@ -897,7 +923,7 @@ namespace IndustrialFurnace
             // Display the menu for the output chest
             Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true,
                 new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems), null, (string)null,
-                new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer, this)),
+                new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer)),
                 false, true, true, true, false, 1, null, -1, null);
         }
 

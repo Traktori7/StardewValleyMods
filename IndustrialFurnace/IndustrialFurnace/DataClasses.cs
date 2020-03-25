@@ -75,13 +75,13 @@ namespace IndustrialFurnace
 
 
         /// <summary>Parses the furnace controller data from the save data</summary>
-        public void ParseModSaveDataToControllers(List<IndustrialFurnaceController> furnaces)
+        public void ParseModSaveDataToControllers(List<IndustrialFurnaceController> furnaces, ModEntry mod)
         {
             // Assume the lists are equally as long
 
             for (int i = 0; i < FurnaceControllerId.Count; i++)
             {
-                IndustrialFurnaceController controller = new IndustrialFurnaceController(FurnaceControllerId[i], FurnaceControllerCurrentlyOn[i]);
+                IndustrialFurnaceController controller = new IndustrialFurnaceController(FurnaceControllerId[i], FurnaceControllerCurrentlyOn[i], mod);
 
                 Dictionary<int, int> tempDictionary = FurnaceControllerInput[i];
                 foreach (KeyValuePair<int, int> kvp in tempDictionary)

@@ -12,6 +12,8 @@ namespace IndustrialFurnace
     /// </summary>
     public class IndustrialFurnaceController
     {
+        private ModEntry mod;
+
         public readonly int ID;
         public bool CurrentlyOn;
 
@@ -22,8 +24,9 @@ namespace IndustrialFurnace
         public LightSource lightSource;
 
 
-        public IndustrialFurnaceController(int tag, bool currentlyOn)
+        public IndustrialFurnaceController(int tag, bool currentlyOn, ModEntry mod)
         {
+            this.mod = mod;
             this.ID = tag;
             this.CurrentlyOn = currentlyOn;
         }
@@ -49,19 +52,25 @@ namespace IndustrialFurnace
         }
 
 
-        public void GrabItemFromChest(Item item, Farmer who, ModEntry mod)
+        public void GrabItemFromChest(Item item, Farmer who)
         {
             if (!who.couldInventoryAcceptThisItem(item))
                 return;
 
-            output.items.Remove(item);
-            output.clearNulls();
+            TakeFromOutput(item);
 
             Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(output.items, false, true,
                 new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
                 null, (string)null,
-                new ItemGrabMenu.behaviorOnItemSelect((itemParam, farmer) => GrabItemFromChest(itemParam, farmer, mod)),
+                new ItemGrabMenu.behaviorOnItemSelect((itemParam, farmer) => GrabItemFromChest(itemParam, farmer)),
                 false, true, true, true, false, 1, (Item)output, -1, (object)output);
+        }
+
+
+        public void TakeFromOutput(Item item)
+        {
+            output.items.Remove(item);
+            output.clearNulls();
 
             mod.SendUpdateMessage();
         }
