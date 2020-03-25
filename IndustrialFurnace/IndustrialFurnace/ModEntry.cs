@@ -543,10 +543,14 @@ namespace IndustrialFurnace
         private void OnMenuChanged(object sender, MenuChangedEventArgs e)
         {
             // Add the blueprint
-            if (e.NewMenu is CarpenterMenu)
+            if (e.NewMenu is CarpenterMenu carpenterMenu)
             {
+                bool isMagicalMenu = this.Helper.Reflection.GetField<bool>(carpenterMenu, "magicalConstruction").GetValue();
+
+                if (isMagicalMenu) return;
+
                 IList<BluePrint> blueprints = this.Helper.Reflection
-                    .GetField<List<BluePrint>>(e.NewMenu, "blueprints")
+                    .GetField<List<BluePrint>>(carpenterMenu, "blueprints")
                     .GetValue();
 
                 // Add furnace blueprint, and tag it uniquely based on how many have been built
