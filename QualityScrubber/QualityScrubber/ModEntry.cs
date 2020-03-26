@@ -1,15 +1,20 @@
-﻿using System;
-using Microsoft.Xna.Framework;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
+
 
 namespace QualityScrubber
 {
     /// <summary>The mod entry point.</summary>
-    public class ModEntry : Mod
+    public class ModEntry : StardewModdingAPI.Mod
     {
+        private const string qualityScrubberType = "Quality Scrubber";
+
+        private ModConfig config;
+
+        private QualityScrubberController controller;
+
+
         /*********
         ** Public methods
         *********/
@@ -17,7 +22,17 @@ namespace QualityScrubber
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
+            config = helper.ReadConfig<ModConfig>();
+
+            controller = new QualityScrubberController(Monitor, config.AllowPreserves, config.AllowHoney, config.Duration);
+
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+        }
+
+        
+        public override object GetApi()
+        {
+            return new QualityScrubberApi(controller);
         }
 
 
@@ -30,44 +45,27 @@ namespace QualityScrubber
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
             // ignore if player hasn't loaded a save yet
-            if (!Context.IsWorldReady)
+            if (!Context.IsPlayerFree)
                 return;
 
             if (e.Button.IsActionButton())
             {
-                foreach (var esine in Game1.player.currentLocation.Objects)
+                foreach (var objects in Game1.player.currentLocation.Objects)
                 {
-                    foreach (var kvp in esine)
+                    foreach (var kvp in objects)
                     {
-                        if (kvp.Value.Name == "Quality Scrubber" && kvp.Key == e.Cursor.GrabTile)
+                        if (kvp.Value.Name == qualityScrubberType && kvp.Key == e.Cursor.GrabTile)
                         {
-                            StartProcessing(Game1.player.ActiveObject, kvp.Value);
-
-                            /*if (((QualityScrubber)kvp.Value).performObjectDropInAction(Game1.player.ActiveObject, false, Game1.player))
+                            // See if the machine accepts the item, suppress the input to prevent the eating menu from opening
+                            if (controller.CanProcess(Game1.player.ActiveObject, kvp.Value))
                             {
-                                this.Monitor.Log("Testi onnistui", LogLevel.Debug);
-
-                            }*/
+                                controller.StartProcessing(Game1.player.ActiveObject, kvp.Value, Game1.player);
+                                Helper.Input.Suppress(e.Button);
+                            }
                         }
                     }
                 }
             }
-        }
-
-
-        private void StartProcessing(StardewValley.Object inputItem, StardewValley.Object machine)
-        {
-            this.Monitor.Log("Machine starts to dequalify the item", LogLevel.Debug);
-            machine.heldObject.Value = inputItem;
-        }
-    }
-
-    public class QualityScrubber : StardewValley.Object
-    {
-
-        public override bool performObjectDropInAction(Item dropInItem, bool probe, Farmer who)
-        {
-            return true;
         }
     }
 }

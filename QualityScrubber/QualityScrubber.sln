@@ -18,6 +18,7 @@ Global
 		{119B126B-5E9E-42CE-824C-4204E4631079}.Debug|x86.Build.0 = Debug|x86
 		{119B126B-5E9E-42CE-824C-4204E4631079}.Release|Any CPU.ActiveCfg = Release|x86
 		{119B126B-5E9E-42CE-824C-4204E4631079}.Release|x86.ActiveCfg = Release|x86
+		{119B126B-5E9E-42CE-824C-4204E4631079}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
