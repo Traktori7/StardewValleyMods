@@ -1,6 +1,7 @@
 ﻿using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using SObject = StardewValley.Object;
 
 
 namespace QualityScrubber
@@ -50,19 +51,17 @@ namespace QualityScrubber
 
             if (e.Button.IsActionButton())
             {
-                foreach (var objects in Game1.player.currentLocation.Objects)
+                var objects = Game1.player.currentLocation.Objects;
+
+                SObject machine = objects[e.Cursor.GrabTile];
+
+                if (machine != null && machine.Name == qualityScrubberType)
                 {
-                    foreach (var kvp in objects)
+                    // See if the machine accepts the item, suppress the input to prevent the eating menu from opening
+                    if (controller.CanProcess(Game1.player.ActiveObject, machine))
                     {
-                        if (kvp.Value.Name == qualityScrubberType && kvp.Key == e.Cursor.GrabTile)
-                        {
-                            // See if the machine accepts the item, suppress the input to prevent the eating menu from opening
-                            if (controller.CanProcess(Game1.player.ActiveObject, kvp.Value))
-                            {
-                                controller.StartProcessing(Game1.player.ActiveObject, kvp.Value, Game1.player);
-                                Helper.Input.Suppress(e.Button);
-                            }
-                        }
+                        controller.StartProcessing(Game1.player.ActiveObject, machine, Game1.player);
+                        Helper.Input.Suppress(e.Button);
                     }
                 }
             }
