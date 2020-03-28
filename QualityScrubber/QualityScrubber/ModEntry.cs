@@ -53,7 +53,7 @@ namespace QualityScrubber
             {
                 var objects = Game1.player.currentLocation.Objects;
 
-                SObject machine = objects[e.Cursor.GrabTile];
+                objects.TryGetValue(e.Cursor.GrabTile, out SObject machine);
 
                 if (machine != null && machine.Name == qualityScrubberType)
                 {
