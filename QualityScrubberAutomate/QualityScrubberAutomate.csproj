@@ -18,13 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\QualityScrubber\QualityScrubber.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Automate">
-      <HintPath>..\..\..\StardewValleyModding\Automate.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="QualityScrubber">
-      <HintPath>..\..\QualityScrubber\QualityScrubber\bin\x86\Release\net452\QualityScrubber.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\..\StardewValleyModding\references\Automate.dll</HintPath>
     </Reference>
   </ItemGroup>
 

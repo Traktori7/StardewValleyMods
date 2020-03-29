@@ -18,13 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\IndustrialFurnace\IndustrialFurnace.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Automate">
-      <HintPath>..\..\..\StardewValleyModding\Automate.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="IndustrialFurnace">
-      <HintPath>..\..\IndustrialFurnace\IndustrialFurnace\bin\x86\Release\net452\IndustrialFurnace.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\..\StardewValleyModding\references\Automate.dll</HintPath>
     </Reference>
   </ItemGroup>
 
