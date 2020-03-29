@@ -25,7 +25,7 @@ namespace QualityScrubber
         {
             config = helper.ReadConfig<ModConfig>();
 
-            controller = new QualityScrubberController(Monitor, config.AllowPreserves, config.AllowHoney, config.Duration);
+            controller = new QualityScrubberController(Monitor, config);
 
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }

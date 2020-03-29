@@ -12,7 +12,7 @@ namespace QualityScrubberAutomate
 {
 	class QualityScrubberAutomationFactory : IAutomationFactory
 	{
-		public QualityScrubberController controller { get; set; }
+		private QualityScrubberController controller { get; set; }
 
 
 		public QualityScrubberAutomationFactory(QualityScrubberController controller)

@@ -2,6 +2,7 @@
 using StardewModdingAPI;
 using StardewValley;
 using SObject = StardewValley.Object;
+using StardewValley.Objects;
 
 
 namespace QualityScrubber
@@ -9,17 +10,18 @@ namespace QualityScrubber
 	public class QualityScrubberController
 	{
         private IMonitor Monitor { get; set; }
-        public bool AllowPreserves { get; set; }
-        public bool AllowHoney { get; set; }
-        public int Duration { get; set; }
+        private ModConfig Config { get; set; }
+
+        public int Duration
+        {
+            get { return Config.Duration; }
+        }
 
 
-        public QualityScrubberController(IMonitor monitor, bool allowPreserves, bool allowHoney, int duration)
+        public QualityScrubberController(IMonitor monitor, ModConfig config)
         {
             this.Monitor = monitor;
-            this.AllowPreserves = allowPreserves;
-            this.AllowHoney = allowHoney;
-            this.Duration = duration;
+            this.Config = config;
         }
 
 
@@ -47,14 +49,14 @@ namespace QualityScrubber
             }
 
             // Ignore roe/wine/juice/jelly/pickles
-            if (!AllowPreserves && inputObject.preserve.Value != null)
+            if (!Config.AllowPreserves && inputObject.preserve.Value != null)
             {
                 //Monitor.Log("You can't scrub these yet!", LogLevel.Debug);
                 return false;
             }
 
             // Ignore honey...
-            if (!AllowHoney && inputObject.ParentSheetIndex == 340)
+            if (!Config.AllowHoney && inputObject.ParentSheetIndex == 340)
             {
                 //Monitor.Log("You can't scrub honey!", LogLevel.Debug);
                 return false;
@@ -64,48 +66,87 @@ namespace QualityScrubber
         }
 
 
-        public SObject GetOutputObject(Item inputObject)
+        public SObject GetOutputObject(Item inputItem)
         {
-            return new SObject(Vector2.Zero, inputObject.ParentSheetIndex, 1)
+            if (inputItem is SObject inputObject)
             {
-                //Name = inputObject.Name,
-                // This doesn't seem to do anything...
-                //DisplayName = inputObject.DisplayName,
-                Quality = SObject.lowQuality
-            };
+                bool turnIntoGeneric = false;
+
+                SObject outputObject;
+
+                // Handle roe/aged roe
+                if (inputObject is ColoredObject)
+                {
+                    outputObject = new ColoredObject(inputObject.ParentSheetIndex, 1, ((ColoredObject)inputObject).color.Value);
+                }
+                else
+                {
+                    outputObject = new StardewValley.Object(Vector2.Zero, inputObject.ParentSheetIndex, 1);
+
+                    // If input is honey, copy honey type
+                    if (outputObject.Name.Contains("Honey"))
+                    {
+                        outputObject.honeyType.Value = inputObject.honeyType.Value;
+
+                        if (Config.TurnHoneyIntoGenericHoney)
+                            turnIntoGeneric = true;
+                    }
+                }
+
+                outputObject.Quality = SObject.lowQuality;
+
+                switch (inputObject.preserve.Value)
+                {
+                    case SObject.PreserveType.AgedRoe:
+                    case SObject.PreserveType.Roe:
+                        if (Config.TurnRoeIntoGenericRoe)
+                            turnIntoGeneric = true;
+                        break;
+                    case SObject.PreserveType.Jelly:
+                        if (Config.TurnJellyIntoGenericJelly)
+                            turnIntoGeneric = true;
+                        break;
+                    case SObject.PreserveType.Juice:
+                        if (Config.TurnJuiceIntoGenericJuice)
+                            turnIntoGeneric = true;
+                        break;
+                    case SObject.PreserveType.Pickle:
+                        if (Config.PicklesIntoGenericPickles)
+                            turnIntoGeneric = true;
+                        break;
+                    case SObject.PreserveType.Wine:
+                        if (Config.TurnWineIntoGenericWine)
+                            turnIntoGeneric = true;
+                        break;
+                    default:
+                        break;
+                }
+
+                if (!turnIntoGeneric)
+                {
+                    outputObject.Name = inputObject.Name;
+                    outputObject.Price = inputObject.Price;
+                    // Preserve value has to be defined here, otherwise the output will be named "Weeds {preservetype}"
+                    outputObject.preserve.Value = inputObject.preserve.Value;
+                    // Handle preserves (Wine, Juice, Jelly, Pickle)
+                    // preservedParentSheetIndex + preserve type define the object's DisplayName
+                    outputObject.preservedParentSheetIndex.Value = inputObject.preservedParentSheetIndex.Value;
+                }
+
+                return outputObject;
+            }
+
+            return null;
         }
 
 
         public void StartProcessing(SObject inputObject, SObject machine, Farmer who)
         {
-
-            /*if (jsonAssetsApiFound)
-            {
-                int temp = jsonAssetsApi.GetObjectId(inputObject.Name);
-
-                if (inputObject.ParentSheetIndex == temp)
-                {
-                    Monitor.Log($"The IDs matched for {inputObject.Name}");
-                }
-            }*/
-
-            // honey example maybe LoadOutputName outputconfigcontroller.cs
-
-            // Try to handle roe/wine/juice/jelly/pickles
-            /*if (inputObject is ColoredObject)
-            {
-                itemToDequalify = new ColoredObject(inputObject.ParentSheetIndex, 1, ((ColoredObject)inputObject).color.Value);
-                itemToDequalify.preservedParentSheetIndex.Value = inputObject.preservedParentSheetIndex.Value;
-            }
-            else
-                itemToDequalify = new StardewValley.Object(Vector2.Zero, inputItem.ParentSheetIndex, 1);*/
-
             SObject outputObject = GetOutputObject(inputObject);
-            // Fix the price?
 
             //this.Monitor.Log("Machine starts to scrub the item", LogLevel.Debug);
             machine.heldObject.Value = outputObject;
-            machine.MinutesUntilReady = Duration;
+            machine.MinutesUntilReady = Config.Duration;
 
             // Remove the item from inventory, if everything was successful
             if (who.ActiveObject.Stack == 1)
