@@ -1,7 +1,7 @@
 {
 	"Name": "Quality Scrubber",
 	"Author": "Traktori",
-	"Version": "1.0.0",
+	"Version": "1.1.0",
 	"Description": "Removes quality from processed items.",
 	"UniqueID": "Traktori.QualityScrubber",
 	"EntryDll": "QualityScrubber.dll",
