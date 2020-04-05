@@ -96,7 +96,7 @@ namespace IndustrialFurnace
 
             helper.Events.Display.RenderedWorld += this.OnRenderedWorld;
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
-            helper.Events.GameLoop.UpdateTicking += this.OnUpdate;
+            helper.Events.GameLoop.UpdateTicking += this.OnUpdateTicking;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
             helper.Events.GameLoop.ReturnedToTitle += this.OnReturnedToTitle;
             helper.Events.GameLoop.Saving += this.OnSaving;
@@ -224,8 +224,8 @@ namespace IndustrialFurnace
         /*********
         ** Private methods
         *********/
-        /// <summary>Raised before/after the game state is updated</summary>
-        private void OnUpdate(object sender, UpdateTickingEventArgs e)
+        /// <summary>Raised before the game state is updated</summary>
+        private void OnUpdateTicking(object sender, UpdateTickingEventArgs e)
         {
             if (Game1.getFarm() is null) return;
 
@@ -445,8 +445,13 @@ namespace IndustrialFurnace
             // Ignore if player hasn't loaded in yet, or is stuck in a menu or cutscene
             if (!Context.IsPlayerFree)
                 return;
+
+            // Don't check if there are no furnaces
+            if (furnaces.Count == 0)
+                return;
             
-            if (e.Button.IsActionButton())
+            // This might fix the android issue, also lets the player place items with both clicks
+            if (e.Button.IsActionButton() || e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
             {
                 // Assumes furnaces can be built only on the farm and checks if player is on the farm map
                 if (!Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
@@ -461,10 +466,12 @@ namespace IndustrialFurnace
                     // The mouth of the furnace
                     if (tile.X == building.tileX.Value + 1 && tile.Y == building.tileY.Value + 1)
                     {
-                        PlaceItemsToTheFurnace(furnace);
-                        Game1.playSound("coin");
-                        
-                        SendUpdateMessage();
+                        if (PlaceItemsToTheFurnace(furnace))
+                        {
+                            Game1.playSound("coin");
+
+                            SendUpdateMessage();
+                        }
                     }
                     // The output chest of the furnace
                     else if (tile.X == building.tileX.Value + 3 && tile.Y == building.tileY.Value + 1)
@@ -617,20 +624,19 @@ namespace IndustrialFurnace
 
         /// <summary>Place items to the furnace</summary>
         /// <param name="furnace">The furnace controller</param>
-        private void PlaceItemsToTheFurnace(IndustrialFurnaceController furnace)
+        /// <returns>Whether the placement was successful or not</returns>
+        private bool PlaceItemsToTheFurnace(IndustrialFurnaceController furnace)
         {
-            //this.Monitor.Log($"{Game1.player.Name} tried to smelt something.", LogLevel.Debug);
-
             // Items can be placed only if the furnace is NOT on
             if (furnace.CurrentlyOn)
             {
                 DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
-                return;
+                return false;
             }
 
-            // Get the current held object
+            // Get the current held object, null for tools etc.
             StardewValley.Object heldItem = Game1.player.ActiveObject;
-            if (heldItem == null) return;
+            if (heldItem == null) return false;
 
             int objectId = heldItem.ParentSheetIndex;
             SmeltingRule rule = newSmeltingRules.GetSmeltingRuleFromInputID(objectId);
@@ -638,6 +644,13 @@ namespace IndustrialFurnace
             // Check if the object is on the smeltables list
             if (rule != null)
             {
+                // Prevent the game from division by 0, even if the player edits the rules
+                if (rule.InputItemAmount == 0)
+                {
+                    Monitor.Log($"The smelting rule for object {objectId} had 0 for input amount.", LogLevel.Error);
+                    return false;
+                }
+
                 int amount = heldItem.Stack;
 
                 // Check if the player has enough to smelt
@@ -647,10 +660,14 @@ namespace IndustrialFurnace
                     int smeltAmount = amount / rule.InputItemAmount;
                     Game1.player.removeItemsFromInventory(objectId, smeltAmount * rule.InputItemAmount);
                     furnace.AddItemsToSmelt(objectId, smeltAmount * rule.InputItemAmount);
+
+                    Monitor.Log($"{Game1.player.Name} placed {smeltAmount * rule.InputItemAmount} {heldItem.Name} to the furnace {furnace.ID}.");
+                    return true;
                 }
                 else
                 {
                     DisplayMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
+                    return false;
                 }
             }
             // Check if the player tries to put coal in the furnace and start the smelting
@@ -663,8 +680,13 @@ namespace IndustrialFurnace
                     {
                         Game1.player.removeItemsFromInventory(objectId, config.CoalAmount);
 
+                        Monitor.Log($"{Game1.player.Name} started the furnace {furnace.ID} with {config.CoalAmount} {heldItem.Name}.");
+
                         if (config.InstantSmelting)
+                        {
+                            Monitor.Log("And it finished immediately.");
                             FinishSmelting(furnace);
+                        }
                         else
                         {
                             furnace.ChangeCurrentlyOn(true);
@@ -674,20 +696,24 @@ namespace IndustrialFurnace
                         }
 
                         Game1.playSound("furnace");
+                        return true;
                     }
                     else
                     {
                         DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+                        return false;
                     }
                 }
                 else
                 {
                     DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+                    return false;
                 }
             }
             else
             {
                 DisplayMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
+                return false;
             }
         }
 
@@ -707,13 +733,15 @@ namespace IndustrialFurnace
         }
 
 
-        /// <summary></summary>
+        /// <summary>Processes the input chest's items and places the result to the output</summary>
         /// <param name="furnace"></param>
         private void FinishSmelting(IndustrialFurnaceController furnace)
         {
             // TODO: Add checks to prevent loss of items, since it is possible that 'output amount' > 'input amount'
 
-            // Collect the object data to a dictionary first to fix losing items with over 999 stacks
+            Monitor.Log("Processing the outputs.");
+
+            // Collect the object data to a dictionary (ID, amount) first to fix losing items with over 999 stacks
             Dictionary<int, int> smeltablesDictionary = new Dictionary<int, int>();
 
             foreach (Item item in furnace.input.items)
@@ -737,12 +765,23 @@ namespace IndustrialFurnace
 
                 if (rule is null)
                 {
-                    this.Monitor.Log("Item with ID " + kvp.Key + " wasn't in the smelting rules despite being in the input chest!", LogLevel.Error);
+                    // This should never be hit, but let's error it just incase...
+                    this.Monitor.Log($"Item with ID {kvp.Key} wasn't in the smelting rules despite being in the input chest!", LogLevel.Error);
                     continue;
                 }
 
+                if (rule.InputItemAmount == 0)
+                {
+                    Monitor.Log($"The input amount for object {kvp.Key} was 0. The result can't be processed so the item will be voided.", LogLevel.Error);
+                }
+
+                int outputAmount = (kvp.Value / rule.InputItemAmount) * rule.OutputItemAmount;
+
+                Monitor.Log($"Found {kvp.Value} objects with ID {kvp.Key}. The smelting result is {outputAmount} objects of ID {rule.OutputItemID}.");
+
                 // Add the result defined by the smelting rule to the output chest
-                furnace.AddItemsToSmeltedChest(rule.OutputItemID, (kvp.Value / rule.InputItemAmount) * rule.OutputItemAmount);
+                // Assumes the value is divisible with the input amount
+                furnace.AddItemsToSmeltedChest(rule.OutputItemID, outputAmount);
             }
 
             for (int i = 0; i < furnace.input.items.Count; i++)
