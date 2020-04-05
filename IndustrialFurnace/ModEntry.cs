@@ -472,11 +472,14 @@ namespace IndustrialFurnace
 
                             SendUpdateMessage();
                         }
+
+                        Helper.Input.Suppress(e.Button);
                     }
                     // The output chest of the furnace
                     else if (tile.X == building.tileX.Value + 3 && tile.Y == building.tileY.Value + 1)
                     {
                         CollectItemsFromTheFurnace(furnace);
+                        Helper.Input.Suppress(e.Button);
                     }
                 }
             }
