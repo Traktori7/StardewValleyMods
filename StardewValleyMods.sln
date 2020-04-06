@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QualityScrubber", "QualityS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QualityScrubberAutomate", "QualityScrubberAutomate\QualityScrubberAutomate.csproj", "{48DD64C4-4541-4B6B-83B2-B95DA1EBD1DE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VersatileGrabber", "VersatileGrabber\VersatileGrabber.csproj", "{C97942B3-669B-4451-B233-7681B4C3E8B8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -33,6 +35,10 @@ Global
 		{48DD64C4-4541-4B6B-83B2-B95DA1EBD1DE}.Debug|x86.Build.0 = Debug|x86
 		{48DD64C4-4541-4B6B-83B2-B95DA1EBD1DE}.Release|x86.ActiveCfg = Release|x86
 		{48DD64C4-4541-4B6B-83B2-B95DA1EBD1DE}.Release|x86.Build.0 = Release|x86
+		{C97942B3-669B-4451-B233-7681B4C3E8B8}.Debug|x86.ActiveCfg = Debug|x86
+		{C97942B3-669B-4451-B233-7681B4C3E8B8}.Debug|x86.Build.0 = Debug|x86
+		{C97942B3-669B-4451-B233-7681B4C3E8B8}.Release|x86.ActiveCfg = Release|x86
+		{C97942B3-669B-4451-B233-7681B4C3E8B8}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
