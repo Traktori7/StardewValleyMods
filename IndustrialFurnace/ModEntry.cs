@@ -1,16 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Content;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Menus;
-using StardewValley.Locations;
 using StardewValley.Buildings;
-using StardewValley.Network;
-using System;
-using System.IO;
+using StardewValley.Locations;
+using StardewValley.Menus;
+
 
 namespace IndustrialFurnace
 {
@@ -462,6 +461,12 @@ namespace IndustrialFurnace
                     // The clicked tile
                     Vector2 tile = e.Cursor.GrabTile;
                     Building building = furnace.furnace;
+
+                    // Allow only clicks that happen when the cursor is above the furnace to prevent trapping android and possibly controller users
+                    Vector2 cursorPosition = e.Cursor.Tile;
+                    if (!(building.occupiesTile(cursorPosition)))
+                        continue;
+
 
                     // The mouth of the furnace
                     if (tile.X == building.tileX.Value + 1 && tile.Y == building.tileY.Value + 1)
@@ -967,10 +972,23 @@ namespace IndustrialFurnace
         private void DrawOutputMenu(IndustrialFurnaceController furnace)
         {
             // Display the menu for the output chest
-            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(furnace.output.items, false, true,
-                new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems), null, (string)null,
-                new ItemGrabMenu.behaviorOnItemSelect((item, farmer) => furnace.GrabItemFromChest(item, farmer)),
-                false, true, true, true, false, 1, null, -1, null);
+            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(
+                furnace.output.items,
+                false,
+                true,
+                new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
+                null,
+                (string)null,
+                (item, farmer) => furnace.GrabItemFromChest(item, farmer),
+                false,
+                true,
+                true,
+                true,
+                false,
+                0,
+                null,
+                -1,
+                null);
         }
 
 

@@ -1,9 +1,9 @@
-﻿using StardewValley;
+﻿using StardewModdingAPI;
+using StardewValley;
 using StardewValley.Objects;
 using StardewValley.Menus;
 using StardewValley.Buildings;
-using System;
-using Netcode;
+
 
 namespace IndustrialFurnace
 {
@@ -57,20 +57,46 @@ namespace IndustrialFurnace
             if (!who.couldInventoryAcceptThisItem(item))
                 return;
 
-            TakeFromOutput(item);
+            TakeFromOutput(item, who);
 
-            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(output.items, false, true,
+
+            Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(
+                output.items,
+                false,
+                true,
                 new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
-                null, (string)null,
-                new ItemGrabMenu.behaviorOnItemSelect((itemParam, farmer) => GrabItemFromChest(itemParam, farmer)),
-                false, true, true, true, false, 1, (Item)output, -1, (object)output);
+                null,
+                (string)null,
+                (itemParam, farmer) => GrabItemFromChest(itemParam, farmer),
+                false,
+                true,
+                true,
+                true,
+                false,
+                0,
+                null,
+                -1,
+                null);
         }
 
 
-        public void TakeFromOutput(Item item)
+        public void TakeFromOutput(Item item, Farmer who)
         {
-            output.items.Remove(item);
-            output.clearNulls();
+            if (Constants.TargetPlatform == GamePlatform.Android)
+            {
+                // Handle moving the items to the player's inventory since I have no idea how the android version handles its menus
+                // Will most likely break at some point
+                if (who.addItemToInventoryBool(item))
+                {
+                    output.items.Remove(item);
+                    output.clearNulls();
+                }
+            }
+            else
+            {
+                output.items.Remove(item);
+                output.clearNulls();
+            }
 
             mod.SendUpdateMessage();
         }
