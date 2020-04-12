@@ -9,6 +9,7 @@ using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
 using StardewValley.Menus;
+using SObject = StardewValley.Object;
 
 
 namespace IndustrialFurnace
@@ -52,7 +53,7 @@ namespace IndustrialFurnace
         private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
         private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
 
-        private List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
+        private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
         
 
         /*********
@@ -93,18 +94,18 @@ namespace IndustrialFurnace
             smokeAnimationData = helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
             fireAnimationData = helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
 
-            helper.Events.Display.RenderedWorld += this.OnRenderedWorld;
-            helper.Events.Display.MenuChanged += this.OnMenuChanged;
-            helper.Events.GameLoop.UpdateTicking += this.OnUpdateTicking;
-            helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
-            helper.Events.GameLoop.ReturnedToTitle += this.OnReturnedToTitle;
-            helper.Events.GameLoop.Saving += this.OnSaving;
-            helper.Events.GameLoop.SaveLoaded += this.OnSaveLoaded;
-            helper.Events.GameLoop.DayStarted += this.OnDayStarted;
-            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
-            helper.Events.World.BuildingListChanged += this.OnBuildingListChanged;
-            helper.Events.Multiplayer.ModMessageReceived += this.OnModMessageReceived;
-            helper.Events.Player.Warped += this.OnWarped;
+            helper.Events.Display.RenderedWorld += OnRenderedWorld;
+            helper.Events.Display.MenuChanged += OnMenuChanged;
+            helper.Events.GameLoop.UpdateTicking += OnUpdateTicking;
+            helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+            helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
+            helper.Events.GameLoop.Saving += OnSaving;
+            helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+            helper.Events.GameLoop.DayStarted += OnDayStarted;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.World.BuildingListChanged += OnBuildingListChanged;
+            helper.Events.Multiplayer.ModMessageReceived += OnModMessageReceived;
+            helper.Events.Player.Warped += OnWarped;
         }
 
 
@@ -141,15 +142,15 @@ namespace IndustrialFurnace
         {
             if (asset.AssetNameEquals(assetPath))
             {
-                return this.Helper.Content.Load<T>(defaultFurnaceTexturePath, ContentSource.ModFolder);
+                return Helper.Content.Load<T>(defaultFurnaceTexturePath, ContentSource.ModFolder);
             }
             else if (asset.AssetNameEquals(smokeAnimationSpritePath))
             {
-                return this.Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
+                return Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
             }
             else if (asset.AssetNameEquals(fireAnimationSpritePath))
             {
-                return this.Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
+                return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
             }
 
             throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
@@ -464,7 +465,7 @@ namespace IndustrialFurnace
 
                     // Allow only clicks that happen when the cursor is above the furnace to prevent trapping android and possibly controller users
                     Vector2 cursorPosition = e.Cursor.Tile;
-                    if (!(building.occupiesTile(cursorPosition)))
+                    if (!building.occupiesTile(cursorPosition))
                         continue;
 
 
@@ -560,11 +561,11 @@ namespace IndustrialFurnace
             // Add the blueprint
             if (e.NewMenu is CarpenterMenu carpenterMenu)
             {
-                bool isMagicalMenu = this.Helper.Reflection.GetField<bool>(carpenterMenu, "magicalConstruction").GetValue();
+                bool isMagicalMenu = Helper.Reflection.GetField<bool>(carpenterMenu, "magicalConstruction").GetValue();
 
                 if (isMagicalMenu) return;
 
-                IList<BluePrint> blueprints = this.Helper.Reflection
+                IList<BluePrint> blueprints = Helper.Reflection
                     .GetField<List<BluePrint>>(carpenterMenu, "blueprints")
                     .GetValue();
 
@@ -643,7 +644,7 @@ namespace IndustrialFurnace
             }
 
             // Get the current held object, null for tools etc.
-            StardewValley.Object heldItem = Game1.player.ActiveObject;
+            SObject heldItem = Game1.player.ActiveObject;
             if (heldItem == null) return false;
 
             int objectId = heldItem.ParentSheetIndex;
@@ -679,7 +680,7 @@ namespace IndustrialFurnace
                 }
             }
             // Check if the player tries to put coal in the furnace and start the smelting
-            else if (objectId == StardewValley.Object.coal && !furnace.CurrentlyOn)
+            else if (objectId == SObject.coal && !furnace.CurrentlyOn)
             {
                 // The input has items to smelt
                 if (furnace.input.items.Count > 0)
@@ -774,7 +775,7 @@ namespace IndustrialFurnace
                 if (rule is null)
                 {
                     // This should never be hit, but let's error it just incase...
-                    this.Monitor.Log($"Item with ID {kvp.Key} wasn't in the smelting rules despite being in the input chest!", LogLevel.Error);
+                    Monitor.Log($"Item with ID {kvp.Key} wasn't in the smelting rules despite being in the input chest!", LogLevel.Error);
                     continue;
                 }
 
@@ -933,7 +934,7 @@ namespace IndustrialFurnace
 
             // Load the saved data. If not present, initialize new
             if (readSaveData)
-                modSaveData = this.Helper.Data.ReadSaveData<ModSaveData>(controllerDataSaveKey);
+                modSaveData = Helper.Data.ReadSaveData<ModSaveData>(controllerDataSaveKey);
 
             if (modSaveData is null)
             {

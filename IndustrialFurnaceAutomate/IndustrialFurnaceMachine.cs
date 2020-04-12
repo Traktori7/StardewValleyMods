@@ -103,7 +103,7 @@ namespace IndustrialFurnaceAutomate
         /// <param name="item">The removed item.</param>
         private void OnOutputTaken(Item item)
         {
-            this.controller.TakeFromOutput(item);
+            this.controller.TakeFromOutput(item, null);
         }
     }
 }

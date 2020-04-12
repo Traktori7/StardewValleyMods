@@ -80,10 +80,13 @@ namespace IndustrialFurnace
         }
 
 
-        public void TakeFromOutput(Item item, Farmer who)
+        public void TakeFromOutput(Item item, Farmer who = null)
         {
             if (Constants.TargetPlatform == GamePlatform.Android)
             {
+                if (who is null)
+                    return;
+
                 // Handle moving the items to the player's inventory since I have no idea how the android version handles its menus
                 // Will most likely break at some point
                 if (who.addItemToInventoryBool(item))
