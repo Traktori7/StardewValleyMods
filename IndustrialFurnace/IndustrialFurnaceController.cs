@@ -84,12 +84,9 @@ namespace IndustrialFurnace
         {
             if (Constants.TargetPlatform == GamePlatform.Android)
             {
-                if (who is null)
-                    return;
-
                 // Handle moving the items to the player's inventory since I have no idea how the android version handles its menus
                 // Will most likely break at some point
-                if (who.addItemToInventoryBool(item))
+                if (who != null && who.addItemToInventoryBool(item))
                 {
                     output.items.Remove(item);
                     output.clearNulls();
