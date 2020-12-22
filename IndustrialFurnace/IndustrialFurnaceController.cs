@@ -48,7 +48,14 @@ namespace IndustrialFurnace
         public void AddItemsToSmeltedChest(int objectId, int amount)
         {
             StardewValley.Object item = new StardewValley.Object(objectId, amount);
-            output.addItem(item);
+            if (item != null && Utility.canItemBeAddedToThisInventoryList(item, output.items, 36))
+			{
+                //Seems to misbehave with stacking in some cases when loading a save vs just sleeping.
+                //There is a chance that the items couldn't be added to the output chest.
+                //Currently it simply voids the overflow.
+                //I hope no one stores 36 stacks of ores in it...
+                Utility.addItemToThisInventoryList(item, output.items, 36);
+			}
         }
 
 
