@@ -383,7 +383,6 @@ namespace IndustrialFurnace
             // Reset stuff
             modSaveData = null;
             furnaces.Clear();
-            furnaces.Clear();
         }
 
 
@@ -929,7 +928,6 @@ namespace IndustrialFurnace
         private void InitializeFurnaceControllers(bool readSaveData)
         {
             // Initialize the lists to prevent data leaking from previous games
-            furnaces.Clear();
             furnaces.Clear();
 
             // Load the saved data. If not present, initialize new
