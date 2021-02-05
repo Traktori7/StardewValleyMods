@@ -12,9 +12,6 @@ namespace ShowBirthdays
 {
 	class ModEntry : Mod
 	{
-		//private bool changeOnClick = false;
-		//private bool cycleAlways = false;
-		//private bool cycleHover = true;
 		private CycleType cycleType;
 		// Flag for if the calendar is open
 		private bool calendarOpen = false;
@@ -34,18 +31,41 @@ namespace ShowBirthdays
 		private ModConfig config;
 
 
+		private Texture2D iconTexture;
+		private readonly string iconPath = "assets/Icon.png";
+
+
 		public override void Entry(IModHelper helper)
 		{
 			helper.Events.Display.MenuChanged += OnMenuChanged;
 			helper.Events.Display.RenderingActiveMenu += OnRenderingActiveMenu;
+			helper.Events.Display.RenderedActiveMenu += OnRenderedActiveMenu;
 			helper.Events.GameLoop.GameLaunched += OnLaunched;
 			helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+			helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 			helper.Events.Input.ButtonPressed += OnButtonPressed;
 			helper.Events.Input.CursorMoved += OnCursorMoved;
 		}
 
+		
+
+
+		/*
+		public bool CanLoad<T>(IAssetInfo asset)
+		{
+			return asset.AssetNameEquals(iconName);
+		}
+
+		public T Load<T>(IAssetInfo asset)
+		{
+			return Helper.Content.Load<T>(iconPath, ContentSource.ModFolder);
+		}
+		*/
+
+
 		private void OnLaunched(object sender, GameLaunchedEventArgs e)
 		{
+			// Load the config for generic mod config menu
 			config = Helper.ReadConfig<ModConfig>();
 			var api = Helper.ModRegistry.GetApi<GenericModConfigAPI>("spacechase0.GenericModConfigMenu");
 
@@ -56,12 +76,46 @@ namespace ShowBirthdays
 				api.RegisterClampedOption(ModManifest, "Cycle duration", "Duration in draw cycles", () => config.cycleDuration, (int val) => config.cycleDuration = val, 1, 600);
 				api.RegisterChoiceOption(ModManifest, "Cycle type", "How the sprites cycle", () => config.cycleType, (string val) => config.cycleType = val, ModConfig.cycleTypes);
 			}
+
+			// Load the icon from the mod folder
+			iconTexture = Helper.Content.Load<Texture2D>(iconPath, ContentSource.ModFolder);
+
+			if (iconTexture == null)
+			{
+				PrintLogMessage("Failed loading " + iconPath, LogLevel.Error);
+			}
 		}
+
+
+		private void OnReturnedToTitle(object sender, ReturnedToTitleEventArgs e)
+		{
+			// Unsubscribe from the events. Can you unsubscribe from events you haven't subscribed to?
+			Helper.Events.Input.ButtonPressed -= OnButtonPressed;
+			Helper.Events.Input.CursorMoved -= OnCursorMoved;
+		}
+
 
 		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
 		{
 			// Initialize the helper
 			bdHelper = new BirthdayHelper(this);
+			// Refresh the config
+			config = Helper.ReadConfig<ModConfig>();
+
+			// Subscribe to the correct events to prevent unnecessary event checks
+			switch (cycleType)
+			{
+				case CycleType.Always:
+					break;
+				case CycleType.Hover:
+					Helper.Events.Input.CursorMoved += OnCursorMoved;
+					break;
+				case CycleType.Click:
+					Helper.Events.Input.ButtonPressed += OnButtonPressed;
+					break;
+				default:
+					break;
+			}
 
 			// Read the config options
 			if (config.cycleType.Equals("Always"))
@@ -121,6 +175,7 @@ namespace ShowBirthdays
 
 				// We are looking at the calendar so update the flag for it
 				calendarOpen = true;
+				PrintLogMessage("Draw mode is UI " + Game1.uiMode, LogLevel.Debug);
 
 				List<ClickableTextureComponent> days = billboard.calendarDays;
 
@@ -183,7 +238,7 @@ namespace ShowBirthdays
 					days[i - 1].hoverText = newHoverText.Trim();
 
 
-					// Add the textures
+					// Add the NPC textures
 					if (list.Contains(i))
 					{
 						days[i - 1].texture = bdHelper.GetCurrentSprite(Game1.currentSeason, i);
@@ -206,7 +261,7 @@ namespace ShowBirthdays
 			// Possibly dangerous conversion
 			List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard).calendarDays;
 
-			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason);
+			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
 			switch (cycleType)
 			{
@@ -256,8 +311,35 @@ namespace ShowBirthdays
 					PrintLogMessage("Unknown cycle type encountered in OnRenderingActiveMenu", LogLevel.Error);
 					break;
 			}
+		}
 
-			
+
+		private void OnRenderedActiveMenu(object sender, RenderedActiveMenuEventArgs e)
+		{
+			if (!calendarOpen)
+				return;
+
+			List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard).calendarDays;
+
+			// Get birthday days that are shared
+			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
+
+			int offsetX = iconTexture.Width * Game1.pixelZoom;
+			int offsetY = iconTexture.Height * Game1.pixelZoom;
+
+			for (int i = 0; i < listOfDays.Count; i++)
+			{
+				// Add the icon texture to the bottom right
+				Vector2 position = new Vector2(days[listOfDays[i] - 1].bounds.Right - offsetX, days[listOfDays[i] - 1].bounds.Bottom - offsetY);
+
+				e.SpriteBatch.Draw(iconTexture, new Rectangle((int)position.X, (int)position.Y, offsetX, offsetY), Color.White);
+			}
+
+			// Redraw the cursor, try to mimic snappy menus option, will need feedback from people
+			if (!Game1.options.SnappyMenus)
+			{
+				Game1.activeClickableMenu.drawMouse(e.SpriteBatch);
+			}
 		}
 
 
@@ -273,13 +355,19 @@ namespace ShowBirthdays
 
 				for (int i = 0; i < days.Count; i++)
 				{
-					Vector2 point = e.Cursor.GetScaledScreenPixels();
-
-					if (days[i].containsPoint((int)point.X, (int)point.Y))
+					// Force the game in UIMode to get the correct scaling for pixel coordinates, since for calendar UIMode = false, for some reason...
+					Game1.InUIMode(() =>
 					{
-						clickedDay = i + 1;
-						Monitor.Log("Player clicked on day " + clickedDay + " at " + point.ToString(), LogLevel.Debug);
-					}
+						Vector2 point = e.Cursor.GetScaledScreenPixels();
+
+						if (days[i].containsPoint((int)point.X, (int)point.Y))
+						{
+							clickedDay = i + 1;
+							Monitor.Log("Player clicked on day " + clickedDay + " at " + point.ToString(), LogLevel.Debug);
+							PrintLogMessage("Draw mode is UI " + Game1.uiMode, LogLevel.Debug);
+							PrintLogMessage("Rectangle pos " + days[i].getVector2(), LogLevel.Debug);
+						}
+					});
 				}
 			}
 		}
@@ -289,8 +377,13 @@ namespace ShowBirthdays
 		{
 			if (cycleType != CycleType.Hover || !calendarOpen)
 				return;
-
-			cursorPos = e.NewPosition.GetScaledScreenPixels();
+			
+			// Force the game in UIMode to get the correct scaling for pixel coordinates, since for calendar UIMode = false, for some reason...
+			Game1.InUIMode(() =>
+			{
+				cursorPos = e.NewPosition.GetScaledScreenPixels();
+				PrintLogMessage(cursorPos.ToString() + " UIMode " + Game1.uiMode, LogLevel.Debug);
+			});
 		}
 
 
@@ -299,7 +392,7 @@ namespace ShowBirthdays
 			Monitor.Log(s, level);
 		}
 
-
+		
 		class BirthdayHelper
 		{
 			// Reference to the outer class to allow error logging
@@ -347,7 +440,7 @@ namespace ShowBirthdays
 			}
 
 
-			public List<int> GetDays(string season)
+			public List<int> GetDays(string season, bool onlyShared = false)
 			{
 				List<Birthday> list = GetListOfBirthdays(season);
 
@@ -357,7 +450,8 @@ namespace ShowBirthdays
 				{
 					for (int i = 0; i < list.Count; i++)
 					{
-						days.Add(list[i].day);
+						if (!onlyShared || list[i].GetNPCs().Count > 1)
+							days.Add(list[i].day);
 					}
 				}
 
