@@ -4,6 +4,11 @@ namespace VersatileGrabber
 {
 	class Config
 	{
-		public bool GlobalHarvesting { get; set; } = false;
+		public SButton debugKey { get; set; }
+
+		public Config()
+		{
+			debugKey = SButton.J;
+		}
 	}
 }
