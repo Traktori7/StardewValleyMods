@@ -15,6 +15,7 @@ namespace ShowBirthdays
 		private CycleType cycleType;
 		// Flag for if the calendar is open
 		private bool calendarOpen = false;
+
 		// Interval in ticks for changing the birthday sprite
 		private int spriteCycleTicks = 120;
 		private int currentCycle = 0;
@@ -22,14 +23,8 @@ namespace ShowBirthdays
 		private int clickedDay = -1;
 		private Vector2 cursorPos = new Vector2();
 
-		// List of triplets (Season, Day, NPC)
-		//private readonly List<Tuple<String, int, NPC>> birthdays = new List<Tuple<string, int, NPC>>();
-
-		//private readonly Dictionary<String, BirthdayHelper> birthdays = new Dictionary<string, BirthdayHelper>();
-
 		private BirthdayHelper bdHelper;
 		private ModConfig config;
-
 
 		private Texture2D iconTexture;
 		private readonly string iconPath = "assets/Icon.png";
@@ -47,21 +42,6 @@ namespace ShowBirthdays
 			helper.Events.Input.CursorMoved += OnCursorMoved;
 		}
 
-		
-
-
-		/*
-		public bool CanLoad<T>(IAssetInfo asset)
-		{
-			return asset.AssetNameEquals(iconName);
-		}
-
-		public T Load<T>(IAssetInfo asset)
-		{
-			return Helper.Content.Load<T>(iconPath, ContentSource.ModFolder);
-		}
-		*/
-
 
 		private void OnLaunched(object sender, GameLaunchedEventArgs e)
 		{
@@ -69,17 +49,20 @@ namespace ShowBirthdays
 			config = Helper.ReadConfig<ModConfig>();
 			var api = Helper.ModRegistry.GetApi<GenericModConfigAPI>("spacechase0.GenericModConfigMenu");
 
+			// Register options for GMCM
 			if (api != null)
 			{
 				api.RegisterModConfig(ModManifest, () => config = new ModConfig(), () => Helper.WriteConfig(config));
 
-				api.RegisterClampedOption(ModManifest, "Cycle duration", "Duration in draw cycles", () => config.cycleDuration, (int val) => config.cycleDuration = val, 1, 600);
-				api.RegisterChoiceOption(ModManifest, "Cycle type", "How the sprites cycle", () => config.cycleType, (string val) => config.cycleType = val, ModConfig.cycleTypes);
+				api.RegisterClampedOption(ModManifest, Helper.Translation.Get("duration-label"), Helper.Translation.Get("duration-desc"), () => config.cycleDuration, (int val) => config.cycleDuration = val, 1, 600);
+				api.RegisterChoiceOption(ModManifest, Helper.Translation.Get("type-label"), Helper.Translation.Get("type-desc"), () => config.cycleType, (string val) => config.cycleType = val, ModConfig.cycleTypes);
+				api.RegisterSimpleOption(ModManifest, Helper.Translation.Get("icon-label"), Helper.Translation.Get("icon-desc"), () => config.showIcon, (bool val) => config.showIcon = val);
 			}
 
 			// Load the icon from the mod folder
 			iconTexture = Helper.Content.Load<Texture2D>(iconPath, ContentSource.ModFolder);
 
+			// Check if the loading succeeded
 			if (iconTexture == null)
 			{
 				PrintLogMessage("Failed loading " + iconPath, LogLevel.Error);
@@ -89,7 +72,7 @@ namespace ShowBirthdays
 
 		private void OnReturnedToTitle(object sender, ReturnedToTitleEventArgs e)
 		{
-			// Unsubscribe from the events. Can you unsubscribe from events you haven't subscribed to?
+			// Unsubscribe from the events to reduce unnecessary event checks
 			Helper.Events.Input.ButtonPressed -= OnButtonPressed;
 			Helper.Events.Input.CursorMoved -= OnCursorMoved;
 		}
@@ -117,17 +100,22 @@ namespace ShowBirthdays
 					break;
 			}
 
-			// Read the config options
-			if (config.cycleType.Equals("Always"))
-				cycleType = CycleType.Always;
-			else if (config.cycleType.Equals("Hover"))
-				cycleType = CycleType.Hover;
-			else if (config.cycleType.Equals("Click"))
-				cycleType = CycleType.Click;
-			else
+			// Read the config options and fix the values if needed
+			switch (config.cycleType)
 			{
-				PrintLogMessage("The only accepted cycle types are Always, Hover and Click. Defaulting to Always.", LogLevel.Error);
-				cycleType = CycleType.Always;
+				case "Always":
+					cycleType = CycleType.Always;
+					break;
+				case "Hover":
+					cycleType = CycleType.Hover;
+					break;
+				case "Click":
+					cycleType = CycleType.Click;
+					break;
+				default:
+					PrintLogMessage("The only accepted cycle types are Always, Hover and Click. Defaulting to Always.", LogLevel.Error);
+					cycleType = CycleType.Always;
+					break;
 			}
 
 			spriteCycleTicks = config.cycleDuration;
@@ -139,12 +127,9 @@ namespace ShowBirthdays
 
 			foreach (NPC n in Utility.getAllCharacters())
 			{
-				// Checking for 0 should eliminate a lot of the non-friendable NPCs
-				// Tarkista onko season null, entä dwarf, sandy ja krobus? entä asocial npcs (marlon kahteen kertaan SVE:n kanssa)?
+				// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
 				if (n.isVillager() && n.Birthday_Day > 0)
 				{
-					//Tuple<String, int, NPC> entry = Tuple.Create(n.Birthday_Season, n.Birthday_Day, n);
-					//birthdays.Add(entry);
 					bdHelper.AddBirthday(n.Birthday_Season, n.Birthday_Day, n);
 				}
 			}
@@ -152,102 +137,99 @@ namespace ShowBirthdays
 
 
 		/// <summary>
-		/// Raised after a game menu is opened, closed, or replaced.
-		/// Edit the calendar's hover texts to include extra birthdays.
+		/// Edits the calendar's hover texts to include extra birthdays.
 		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
 		private void OnMenuChanged(object sender, MenuChangedEventArgs e)
 		{
-			if (e.NewMenu == null)
+			if (e.NewMenu == null || !(e.NewMenu is Billboard billboard))
 			{
 				calendarOpen = false;
 				return;
 			}
 
-			if (e.NewMenu is Billboard billboard)
+			// Check if we're looking the calendar or the quest part of the billboard
+			bool dailyQuests = this.Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
+
+			// Do nothing if looking at the quest board
+			if (dailyQuests)
+				return;
+
+			// We are looking at the calendar so update the flag for it
+			calendarOpen = true;
+
+			List<ClickableTextureComponent> days = billboard.calendarDays;
+
+			// List of all the birthday days for the season
+			List<int> list = bdHelper.GetDays(Game1.currentSeason);
+
+			// NOTE: Remember that i goes from 1 to 28, so substract 1 from it to use as the index!
+			for (int i = 1; i <= days.Count; i++)
 			{
-				bool dailyQuests = this.Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
+				// Build the hover text from festival, birthdays and wedding if applicable
+				string newHoverText = "";
 
-				// Do nothing if looking at the quest board
-				if (dailyQuests)
-					return;
-
-				// We are looking at the calendar so update the flag for it
-				calendarOpen = true;
-				PrintLogMessage("Draw mode is UI " + Game1.uiMode, LogLevel.Debug);
-
-				List<ClickableTextureComponent> days = billboard.calendarDays;
-
-				// List of all the birthdays for the season
-				List<int> list = bdHelper.GetDays(Game1.currentSeason);
-
-				// NOTE: Remember that i goes from 1 to 28, so substract 1 from it to use as the index!
-				for (int i = 1; i <= days.Count; i++)
+				// Add the festival text if needed
+				if (Utility.isFestivalDay(i, Game1.currentSeason))
 				{
-					// Build the hover text from festival, birthdays and wedding if applicable
-					string newHoverText = "";
+					// Festival name hover text from base game
+					newHoverText = Game1.temporaryContent.Load<Dictionary<string, string>>(string.Concat("Data\\Festivals\\" + Game1.currentSeason, i))["name"];
+				}
+				else if (Game1.currentSeason.Equals("winter") && i >= 15 && i <= 17)
+				{
+					// Night Market hover text from base game
+					newHoverText = Game1.content.LoadString("Strings\\UI:Billboard_NightMarket");
+				}
 
-					// Add the festival text if needed
-					if (Utility.isFestivalDay(i, Game1.currentSeason))
-					{
-						// Festival name hover text from base game
-						newHoverText = Game1.temporaryContent.Load<Dictionary<string, string>>(string.Concat("Data\\Festivals\\" + Game1.currentSeason, i))["name"];
-					}
-					else if (Game1.currentSeason.Equals("winter") && i >= 15 && i <= 17)
-					{
-						// Night Market hover text from base game
-						newHoverText = Game1.content.LoadString("Strings\\UI:Billboard_NightMarket");
-					}
+				// Get the list of all NPCs with the birthday and add them to the hover text
+				List<NPC> listOfNPCs = bdHelper.GetNpcs(Game1.currentSeason, i);
 
-					// Get the list of all NPCs with the birthday and add them to the hover text
-					List<NPC> listOfNPCs = bdHelper.GetNpcs(Game1.currentSeason, i);
-
-					if (listOfNPCs != null)
+				if (listOfNPCs != null)
+				{
+					for (int j = 0; j < listOfNPCs.Count; j++)
 					{
-						for (int j = 0; j < listOfNPCs.Count; j++)
+						if (!newHoverText.Equals(""))
 						{
-							if (!newHoverText.Equals(""))
-							{
-								newHoverText += Environment.NewLine;
-							}
-
-							NPC n = listOfNPCs[j];
-							// Build the hover text just like in the base game. I'm not touching that.
-							newHoverText += ((n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName));
+							newHoverText += Environment.NewLine;
 						}
+
+						NPC n = listOfNPCs[j];
+						// Build the hover text just like in the base game. I'm not touching that.
+						newHoverText += ((n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName));
 					}
+				}
 
-					// Get a refrence to the list of weddings
-					IReflectedField<Dictionary<ClickableTextureComponent, List<string>>> weddings = this.Helper.Reflection.GetField<Dictionary<ClickableTextureComponent, List<string>>>(billboard, "_upcomingWeddings");
+				// Get a refrence to the list of weddings
+				IReflectedField<Dictionary<ClickableTextureComponent, List<string>>> weddings = this.Helper.Reflection.GetField<Dictionary<ClickableTextureComponent, List<string>>>(billboard, "_upcomingWeddings");
 
-					// Wedding text from base game
-					if (weddings.GetValue().ContainsKey(days[i - 1]))
+				// Wedding text from base game
+				if (weddings.GetValue().ContainsKey(days[i - 1]))
+				{
+					for (int j = 0; j < weddings.GetValue().Count / 2; j++)
 					{
-						for (int j = 0; j < weddings.GetValue().Count / 2; j++)
+						if (!newHoverText.Equals(""))
 						{
-							if (!newHoverText.Equals(""))
-							{
-								newHoverText += Environment.NewLine;
-							}
-
-							newHoverText += Game1.content.LoadString("Strings\\UI:Calendar_Wedding", weddings.GetValue()[days[i - 1]][j * 2], weddings.GetValue()[days[i - 1]][j * 2 + 1]);
+							newHoverText += Environment.NewLine;
 						}
+
+						newHoverText += Game1.content.LoadString("Strings\\UI:Calendar_Wedding", weddings.GetValue()[days[i - 1]][j * 2], weddings.GetValue()[days[i - 1]][j * 2 + 1]);
 					}
+				}
 
-					days[i - 1].hoverText = newHoverText.Trim();
+				days[i - 1].hoverText = newHoverText.Trim();
 
 
-					// Add the NPC textures
-					if (list.Contains(i))
-					{
-						days[i - 1].texture = bdHelper.GetCurrentSprite(Game1.currentSeason, i);
-					}
+				// Add the NPC textures
+				if (list.Contains(i))
+				{
+					days[i - 1].texture = bdHelper.GetSprite(Game1.currentSeason, i, false);
 				}
 			}
 		}
 
 
+		/// <summary>
+		/// Changes the NPC sprites according to the selected cycle type
+		/// </summary>
 		private void OnRenderingActiveMenu(object sender, RenderingActiveMenuEventArgs e)
 		{
 			if (!calendarOpen)
@@ -272,7 +254,7 @@ namespace ShowBirthdays
 						{
 							try
 							{
-								days[listOfDays[i] - 1].texture = bdHelper.GetNextSpriteForDay(Game1.currentSeason, listOfDays[i]);
+								days[listOfDays[i] - 1].texture = bdHelper.GetSprite(Game1.currentSeason, listOfDays[i], true);
 							}
 							catch
 							{
@@ -292,7 +274,7 @@ namespace ShowBirthdays
 						{
 							if (days[listOfDays[i] - 1].containsPoint((int)cursorPos.X, (int)cursorPos.Y))
 							{
-								days[listOfDays[i] - 1].texture = bdHelper.GetNextSpriteForDay(Game1.currentSeason, listOfDays[i]);
+								days[listOfDays[i] - 1].texture = bdHelper.GetSprite(Game1.currentSeason, listOfDays[i], true);
 							}
 						}
 
@@ -303,7 +285,7 @@ namespace ShowBirthdays
 				case CycleType.Click:
 					if (clickedDay != -1 && listOfDays.Contains(clickedDay))
 					{
-						days[clickedDay - 1].texture = bdHelper.GetNextSpriteForDay(Game1.currentSeason, clickedDay);
+						days[clickedDay - 1].texture = bdHelper.GetSprite(Game1.currentSeason, clickedDay, true);
 						clickedDay = -1;
 					}
 					break;
@@ -314,12 +296,17 @@ namespace ShowBirthdays
 		}
 
 
+		/// <summary>
+		/// Draws the icon for shared birthdays and redraws the cursor and hover text
+		/// </summary>
 		private void OnRenderedActiveMenu(object sender, RenderedActiveMenuEventArgs e)
 		{
-			if (!calendarOpen)
+			if (!calendarOpen || !config.showIcon)
 				return;
 
-			List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard).calendarDays;
+			Billboard billboard = Game1.activeClickableMenu as Billboard;
+
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
@@ -329,20 +316,32 @@ namespace ShowBirthdays
 
 			for (int i = 0; i < listOfDays.Count; i++)
 			{
-				// Add the icon texture to the bottom right
+				// Add the icon texture to the bottom right of the day
 				Vector2 position = new Vector2(days[listOfDays[i] - 1].bounds.Right - offsetX, days[listOfDays[i] - 1].bounds.Bottom - offsetY);
 
 				e.SpriteBatch.Draw(iconTexture, new Rectangle((int)position.X, (int)position.Y, offsetX, offsetY), Color.White);
 			}
 
-			// Redraw the cursor, try to mimic snappy menus option, will need feedback from people
+			// Redraw the cursor, try to mimic snappy menus option, will need feedback from people since I don't know what snappy menus is
 			if (!Game1.options.SnappyMenus)
 			{
-				Game1.activeClickableMenu.drawMouse(e.SpriteBatch);
+				billboard.drawMouse(e.SpriteBatch);
+			}
+
+			// The current hover text is stored in the billboard itself
+			string text = Helper.Reflection.GetField<string>(billboard, "hoverText").GetValue();
+			
+			// Redraw the hover text
+			if (text.Length > 0)
+			{
+				IClickableMenu.drawHoverText(e.SpriteBatch, text, Game1.dialogueFont);
 			}
 		}
 
 
+		/// <summary>
+		/// Handles changing the sprite if the day as clicked
+		/// </summary>
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
 		{
 			if (!calendarOpen || cycleType != CycleType.Click)
@@ -350,7 +349,7 @@ namespace ShowBirthdays
 
 			if (e.Button == SButton.MouseLeft)
 			{
-				// Dangerous conversion, but should work for now
+				// Dangerous conversion, but calendarOpen should prevent problems for now
 				List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard).calendarDays;
 
 				for (int i = 0; i < days.Count; i++)
@@ -363,9 +362,7 @@ namespace ShowBirthdays
 						if (days[i].containsPoint((int)point.X, (int)point.Y))
 						{
 							clickedDay = i + 1;
-							Monitor.Log("Player clicked on day " + clickedDay + " at " + point.ToString(), LogLevel.Debug);
-							PrintLogMessage("Draw mode is UI " + Game1.uiMode, LogLevel.Debug);
-							PrintLogMessage("Rectangle pos " + days[i].getVector2(), LogLevel.Debug);
+							Monitor.Log("Player clicked on day " + clickedDay + " at " + point.ToString());
 						}
 					});
 				}
@@ -373,6 +370,9 @@ namespace ShowBirthdays
 		}
 
 
+		/// <summary>
+		/// Tracks the cursor position to change the sprite if hovered over
+		/// </summary>
 		private void OnCursorMoved(object sender, CursorMovedEventArgs e)
 		{
 			if (cycleType != CycleType.Hover || !calendarOpen)
@@ -382,11 +382,15 @@ namespace ShowBirthdays
 			Game1.InUIMode(() =>
 			{
 				cursorPos = e.NewPosition.GetScaledScreenPixels();
-				PrintLogMessage(cursorPos.ToString() + " UIMode " + Game1.uiMode, LogLevel.Debug);
 			});
 		}
 
 
+		/// <summary>
+		/// Helper function to let the inner classes log data
+		/// </summary>
+		/// <param name="s">Message</param>
+		/// <param name="level">Logging level</param>
 		public void PrintLogMessage(string s, LogLevel level)
 		{
 			Monitor.Log(s, level);
@@ -412,6 +416,9 @@ namespace ShowBirthdays
 			}
 
 
+			/// <summary>
+			/// Adds birthday and the NPC to the correct list
+			/// </summary>
 			internal void AddBirthday(string season, int birthday, NPC n)
 			{
 				List<Birthday> list = GetListOfBirthdays(season);
@@ -440,6 +447,12 @@ namespace ShowBirthdays
 			}
 
 
+			/// <summary>
+			/// Returns the list of birthday days for the season
+			/// </summary>
+			/// <param name="season">Wanted season</param>
+			/// <param name="onlyShared">Return only shared birthday days</param>
+			/// <returns></returns>
 			public List<int> GetDays(string season, bool onlyShared = false)
 			{
 				List<Birthday> list = GetListOfBirthdays(season);
@@ -473,6 +486,9 @@ namespace ShowBirthdays
 			}
 
 
+			/// <summary>
+			/// Returns the birthday object if it exists
+			/// </summary>
 			private Birthday GetBirthday(string season, int day)
 			{
 				List<Birthday> list = GetListOfBirthdays(season);
@@ -502,17 +518,17 @@ namespace ShowBirthdays
 
 			}
 
-			internal Texture2D GetNextSpriteForDay(string season, int day)
+
+			/// <summary>
+			/// Returns the NPC for the day
+			/// </summary>
+			/// <param name="season">Season</param>
+			/// <param name="day">Day</param>
+			/// <param name="nextInCycle">Get next available sprite</param>
+			internal Texture2D GetSprite(string season, int day, bool nextInCycle)
 			{
 				Birthday birthday = GetBirthday(season, day);
-				return birthday.GetNextSprite();
-			}
-
-
-			internal Texture2D GetCurrentSprite(string season, int day)
-			{
-				Birthday birthday = GetBirthday(season, day);
-				return birthday.GetCurrentSprite();
+				return birthday.GetSprite(nextInCycle);
 			}
 		}
 
@@ -521,9 +537,10 @@ namespace ShowBirthdays
 		{
 			// The day
 			public int day;
-			// Every NPC that has a birthday that day
+			// List of NPCs who have a birthday that day
 			private List<NPC> npcs = new List<NPC>();
 
+			// Keep track of which npc is currently shown for the day
 			private int currentSpriteIndex = 0;
 			// Reference to the outer class to allow error logging
 			private readonly ModEntry mod;
@@ -541,8 +558,8 @@ namespace ShowBirthdays
 
 				for (int i = 0; i < npcs.Count; i++)
 				{
-					//if (Game1.player.friendshipData.ContainsKey(npcs[i].Name))
-					if (npcs[i].CanSocialize)
+					// This should filter out NPCs you haven't met yet, maybe...
+					if (npcs[i].CanSocialize || !hideUnmet)
 					{
 						list.Add(npcs[i]);
 					}
@@ -558,52 +575,11 @@ namespace ShowBirthdays
 			}
 
 
-			internal Texture2D GetNextSprite()
-			{
-				NPC n;
-
-				List<NPC> list = GetNPCs();
-
-				if (list.Count == 0)
-				{
-					return null;
-				}
-
-				// Increment the index and loop it back to 0 if we reached the end
-				currentSpriteIndex++;
-				if (currentSpriteIndex == list.Count)
-					currentSpriteIndex = 0;
-
-				try
-				{
-					//n = npcs[currentSpriteIndex];
-					n = list[currentSpriteIndex];
-				}
-				catch (Exception)
-				{
-					mod.PrintLogMessage("Getting the NPC from the index failed", LogLevel.Error);
-					return null;
-				}
-				
-				Texture2D texture;
-
-				// How the base game handles getting the sprite
-				try
-				{
-					texture = Game1.content.Load<Texture2D>("Characters\\" + n.getTextureName());
-				}
-				catch (Exception)
-				{
-					texture = n.Sprite.Texture;
-				}
-
-				mod.PrintLogMessage("Sprite changed from " + (currentSpriteIndex == 0 ? list[list.Count - 1].Name : list[currentSpriteIndex - 1].Name) + " to " + list[currentSpriteIndex].Name, LogLevel.Trace);
-
-				return texture;
-			}
-
-
-			internal Texture2D GetCurrentSprite()
+			/// <summary>
+			/// Return the NPC sprite
+			/// </summary>
+			/// <param name="incrementSpriteIndex">Select the next available sprite</param>
+			internal Texture2D GetSprite(bool incrementSpriteIndex)
 			{
 				NPC n;
 
@@ -615,6 +591,14 @@ namespace ShowBirthdays
 					return null;
 				}
 
+				if (incrementSpriteIndex)
+				{
+					// Increment the index and loop it back to 0 if we reached the end
+					currentSpriteIndex++;
+					if (currentSpriteIndex == list.Count)
+						currentSpriteIndex = 0;
+				}
+
 				try
 				{
 					n = list[currentSpriteIndex];
@@ -637,16 +621,11 @@ namespace ShowBirthdays
 					texture = n.Sprite.Texture;
 				}
 
+				if (incrementSpriteIndex)
+					mod.PrintLogMessage("Sprite changed from " + (currentSpriteIndex == 0 ? list[list.Count - 1].Name : list[currentSpriteIndex - 1].Name) + " to " + list[currentSpriteIndex].Name, LogLevel.Trace);
+
 				return texture;
 			}
-		}
-
-
-		class ModConfig
-		{
-			public int cycleDuration = 120;
-			public string cycleType = "Always";
-			internal static string[] cycleTypes = new string[] { "Always", "Hover", "Click" };
 		}
 
 		
@@ -665,5 +644,6 @@ namespace ShowBirthdays
 
 		void RegisterClampedOption(IManifest mod, string optionName, string optionDesc, Func<int> optionGet, Action<int> optionSet, int min, int max);
 		void RegisterChoiceOption(IManifest mod, string optionName, string optionDesc, Func<string> optionGet, Action<string> optionSet, string[] choices);
+		void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc, Func<bool> optionGet, Action<bool> optionSet);
 	}
 }
