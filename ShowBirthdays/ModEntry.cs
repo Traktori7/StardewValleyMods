@@ -65,7 +65,7 @@ namespace ShowBirthdays
 			// Check if the loading succeeded
 			if (iconTexture == null)
 			{
-				PrintLogMessage("Failed loading " + iconPath, LogLevel.Error);
+				Monitor.Log("Failed loading " + iconPath, LogLevel.Error);
 			}
 		}
 
@@ -81,7 +81,7 @@ namespace ShowBirthdays
 		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
 		{
 			// Initialize the helper
-			bdHelper = new BirthdayHelper(this);
+			bdHelper = new BirthdayHelper(Monitor);
 			// Refresh the config
 			config = Helper.ReadConfig<ModConfig>();
 
@@ -113,7 +113,7 @@ namespace ShowBirthdays
 					cycleType = CycleType.Click;
 					break;
 				default:
-					PrintLogMessage("The only accepted cycle types are Always, Hover and Click. Defaulting to Always.", LogLevel.Error);
+					Monitor.Log("The only accepted cycle types are Always, Hover and Click. Defaulting to Always.", LogLevel.Error);
 					cycleType = CycleType.Always;
 					break;
 			}
@@ -121,7 +121,7 @@ namespace ShowBirthdays
 			spriteCycleTicks = config.cycleDuration;
 			if (spriteCycleTicks < 1)
 			{
-				PrintLogMessage("Cycle duration can't be less than 1", LogLevel.Error);
+				Monitor.Log("Cycle duration can't be less than 1", LogLevel.Error);
 				spriteCycleTicks = 1;
 			}
 
@@ -259,7 +259,7 @@ namespace ShowBirthdays
 							catch
 							{
 								// Generic error for now.
-								PrintLogMessage("There was a problem with parsing the birthday data", LogLevel.Error);
+								Monitor.Log("There was a problem with parsing the birthday data", LogLevel.Error);
 							}
 						}
 
@@ -290,7 +290,7 @@ namespace ShowBirthdays
 					}
 					break;
 				default:
-					PrintLogMessage("Unknown cycle type encountered in OnRenderingActiveMenu", LogLevel.Error);
+					Monitor.Log("Unknown cycle type encountered in OnRenderingActiveMenu", LogLevel.Error);
 					break;
 			}
 		}
@@ -385,28 +385,17 @@ namespace ShowBirthdays
 			});
 		}
 
-
-		/// <summary>
-		/// Helper function to let the inner classes log data
-		/// </summary>
-		/// <param name="s">Message</param>
-		/// <param name="level">Logging level</param>
-		public void PrintLogMessage(string s, LogLevel level)
-		{
-			Monitor.Log(s, level);
-		}
-
 		
 		class BirthdayHelper
 		{
-			// Reference to the outer class to allow error logging
-			private readonly ModEntry mod;
+			// Reference to the monitor to allow error logging
+			private readonly IMonitor monitor;
 			public List<Birthday>[] birthdays = new List<Birthday>[4];
 
 
-			public BirthdayHelper(ModEntry mod)
+			public BirthdayHelper(IMonitor m)
 			{
-				this.mod = mod;
+				monitor = m;
 
 				// Initialize the array of lists
 				for (int i = 0; i < birthdays.Length; i++)
@@ -425,7 +414,7 @@ namespace ShowBirthdays
 
 				if (list == null)
 				{
-					mod.PrintLogMessage("Failed to add birthday " + season + birthday.ToString() + " for " + n.Name, LogLevel.Error);
+					monitor.Log("Failed to add birthday " + season + birthday.ToString() + " for " + n.Name, LogLevel.Error);
 					return;
 				}
 
@@ -435,7 +424,7 @@ namespace ShowBirthdays
 				if (day == null)
 				{
 					// Add the birthday
-					Birthday newDay = new Birthday(mod, birthday);
+					Birthday newDay = new Birthday(monitor, birthday);
 					newDay.AddNPC(n);
 					list.Add(newDay);
 				}
@@ -512,7 +501,7 @@ namespace ShowBirthdays
 				}
 				catch (Exception)
 				{
-					mod.PrintLogMessage("Index problems", LogLevel.Error);
+					monitor.Log("Index problems", LogLevel.Error);
 					return null;
 				}
 
@@ -543,11 +532,11 @@ namespace ShowBirthdays
 			// Keep track of which npc is currently shown for the day
 			private int currentSpriteIndex = 0;
 			// Reference to the outer class to allow error logging
-			private readonly ModEntry mod;
+			private readonly IMonitor monitor;
 
-			public Birthday(ModEntry mod, int day)
+			public Birthday(IMonitor m, int day)
 			{
-				this.mod = mod;
+				monitor = m;
 				this.day = day;
 			}
 
@@ -605,7 +594,7 @@ namespace ShowBirthdays
 				}
 				catch (Exception)
 				{
-					mod.PrintLogMessage("Getting the NPC from the index failed", LogLevel.Error);
+					monitor.Log("Getting the NPC from the index failed", LogLevel.Error);
 					return null;
 				}
 
@@ -622,7 +611,7 @@ namespace ShowBirthdays
 				}
 
 				if (incrementSpriteIndex)
-					mod.PrintLogMessage("Sprite changed from " + (currentSpriteIndex == 0 ? list[list.Count - 1].Name : list[currentSpriteIndex - 1].Name) + " to " + list[currentSpriteIndex].Name, LogLevel.Trace);
+					monitor.Log("Sprite changed from " + (currentSpriteIndex == 0 ? list[list.Count - 1].Name : list[currentSpriteIndex - 1].Name) + " to " + list[currentSpriteIndex].Name, LogLevel.Trace);
 
 				return texture;
 			}
