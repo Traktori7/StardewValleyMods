@@ -240,8 +240,11 @@ namespace ShowBirthdays
 				currentCycle++;
 			}
 
-			// Possibly dangerous conversion
+			// Get the calendarDays component, it will be null if we're looking at the questboard
 			List<ClickableTextureComponent> days = billboard.calendarDays;
+
+			if (days == null)
+				return;
 
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
@@ -304,7 +307,11 @@ namespace ShowBirthdays
 			if (Game1.activeClickableMenu == null || !(Game1.activeClickableMenu is Billboard billboard) || !config.showIcon)
 				return;
 
+			// Get the calendarDays component, it will be null if we're looking at the questboard
 			List<ClickableTextureComponent> days = billboard.calendarDays;
+
+			if (days == null)
+				return;
 
 			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
