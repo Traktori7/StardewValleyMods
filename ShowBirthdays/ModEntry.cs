@@ -232,7 +232,7 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderingActiveMenu(object sender, RenderingActiveMenuEventArgs e)
 		{
-			if (!calendarOpen)
+			if (Game1.activeClickableMenu == null || !(Game1.activeClickableMenu is Billboard billboard))
 				return;
 
 			if (currentCycle < spriteCycleTicks)
@@ -241,7 +241,7 @@ namespace ShowBirthdays
 			}
 
 			// Possibly dangerous conversion
-			List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard).calendarDays;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
@@ -301,10 +301,8 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderedActiveMenu(object sender, RenderedActiveMenuEventArgs e)
 		{
-			if (!calendarOpen || !config.showIcon)
+			if (Game1.activeClickableMenu == null || !(Game1.activeClickableMenu is Billboard billboard) || !config.showIcon)
 				return;
-
-			Billboard billboard = Game1.activeClickableMenu as Billboard;
 
 			List<ClickableTextureComponent> days = billboard.calendarDays;
 
