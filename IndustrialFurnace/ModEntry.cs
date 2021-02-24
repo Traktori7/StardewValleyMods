@@ -450,7 +450,7 @@ namespace IndustrialFurnace
                 return;
             
             // This might fix the android issue, also lets the player place items with both clicks
-            if (e.Button.IsActionButton() || e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
+            if (e.Button.IsActionButton() || e.Button.IsUseToolButton())
             {
                 // Assumes furnaces can be built only on the farm and checks if player is on the farm map
                 if (!Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
@@ -466,6 +466,7 @@ namespace IndustrialFurnace
                     /*Vector2 cursorPosition = e.Cursor.Tile;
                     if (!building.occupiesTile(cursorPosition))
                         continue;*/
+                    Monitor.Log("Player pressed button " + e.Button.ToString() + ". GrabTile is " + tile.ToString(), LogLevel.Debug);
 
 
                     // The mouth of the furnace
