@@ -463,9 +463,9 @@ namespace IndustrialFurnace
                     Building building = furnace.furnace;
 
                     // Allow only clicks that happen when the cursor is above the furnace to prevent trapping android and possibly controller users
-                    Vector2 cursorPosition = e.Cursor.Tile;
+                    /*Vector2 cursorPosition = e.Cursor.Tile;
                     if (!building.occupiesTile(cursorPosition))
-                        continue;
+                        continue;*/
 
 
                     // The mouth of the furnace
