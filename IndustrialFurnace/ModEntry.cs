@@ -461,17 +461,22 @@ namespace IndustrialFurnace
                     Vector2 tile;
                     Building building = furnace.furnace;
 
+                    if (building.daysOfConstructionLeft.Value > 0)
+                    {
+                        Monitor.Log("Trying to use furnace that hasn't been completed yet");
+                        continue;
+                    }
+
                     // Handle the input checking differently on controllers
                     if (Game1.options.gamepadControls)
 					{
                         tile = new Vector2((int)Game1.player.GetToolLocation().X / 64, (int)Game1.player.GetToolLocation().Y / 64);
-                        //tile = Game1.player.GetToolLocation() / 64;
-                        Monitor.Log("Player pressed button " + e.Button.ToString() + " Tool Location is " + tile.ToString(), LogLevel.Debug);
+                        //Monitor.Log("Player pressed button " + e.Button.ToString() + " Tool Location is " + tile.ToString(), LogLevel.Debug);
                     }
                     else
 					{
                         tile = e.Cursor.GrabTile;
-                        Monitor.Log("Normal click detected on location " + tile.ToString(), LogLevel.Debug);
+                        //Monitor.Log("Normal click detected on location " + tile.ToString(), LogLevel.Debug);
 
                         // Allow only clicks that happen when the cursor is above the furnace to prevent trapping android users
                         if (!building.occupiesTile(e.Cursor.Tile))
