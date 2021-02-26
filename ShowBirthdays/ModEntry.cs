@@ -327,11 +327,8 @@ namespace ShowBirthdays
 				e.SpriteBatch.Draw(iconTexture, new Rectangle((int)position.X, (int)position.Y, offsetX, offsetY), Color.White);
 			}
 
-			// Redraw the cursor, try to mimic snappy menus option, will need feedback from people since I don't know what snappy menus is
-			if (!Game1.options.SnappyMenus)
-			{
-				billboard.drawMouse(e.SpriteBatch);
-			}
+			// Redraw the cursor
+			billboard.drawMouse(e.SpriteBatch);
 
 			// The current hover text is stored in the billboard itself
 			string text = Helper.Reflection.GetField<string>(billboard, "hoverText").GetValue();
