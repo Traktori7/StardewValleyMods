@@ -1,0 +1,10 @@
+﻿{
+	"Name": "CraftableIndustrialFurnace",
+	"Author": "Traktori",
+	"Version": "1.0.0",
+	"Description": "A bigger craftable industrial furnace",
+	"UniqueID": "Traktori.CraftableIndustrialFurnace",
+	"EntryDll": "CraftableIndustrialFurnace.dll",
+	"MinimumApiVersion": "3.8.0",
+	"UpdateKeys": [ "Nexus:" ]
+}
