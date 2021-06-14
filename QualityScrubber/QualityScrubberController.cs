@@ -48,8 +48,11 @@ namespace QualityScrubber
                 return false;
             }
 
-            // Ignore roe/wine/juice/jelly/pickles
-            if (!Config.AllowPreserves && inputObject.preserve.Value != null)
+
+            // Ignore all artisan groups: Aged Roe, Beer, Caviar, Cheese, Cloth,
+            //      Dinosaur Mayonnaise, Duck Mayonnaise, Goat Cheese, Green Tea, Honey, Jelly,
+            //      Juice, Mayonnaise, Mead, Pale Ale, Pickles, Truffle Oil, Void Mayonnaise, Wine
+            if (!Config.AllowArtisanGoods && inputObject.Category == -26)
             {
                 //Monitor.Log("You can't scrub these yet!", LogLevel.Debug);
                 return false;
