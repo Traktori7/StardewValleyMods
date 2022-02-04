@@ -81,7 +81,7 @@ namespace ShowBirthdays
 		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
 		{
 			// Initialize the helper
-			bdHelper = new BirthdayHelper(Monitor);
+			bdHelper = new BirthdayHelper(Monitor, Helper.ModRegistry);
 			// Refresh the config
 			config = Helper.ReadConfig<ModConfig>();
 
@@ -124,20 +124,6 @@ namespace ShowBirthdays
 				Monitor.Log("Cycle duration can't be less than 1", LogLevel.Error);
 				spriteCycleTicks = 1;
 			}
-
-
-			// TODO: Move this to OnMenuChanged to fix the Leo issue
-			// and add a check for Custom NPC Exclusions' calendar exclusion in Data/CustomNPCExclusions.
-			// See Esca's documentation on it on github https://github.com/Esca-MMC/CustomNPCExclusions.
-			// It shouldn't be too costly of a calculation. Access the exclusion data by Game1.content.Load<T>?
-			foreach (NPC n in Utility.getAllCharacters())
-			{
-				// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
-				if (n.isVillager() && n.Birthday_Day > 0)
-				{
-					bdHelper.AddBirthday(n.Birthday_Season, n.Birthday_Day, n);
-				}
-			}
 		}
 
 
@@ -146,7 +132,7 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnMenuChanged(object sender, MenuChangedEventArgs e)
 		{
-			if (e.NewMenu == null || !(e.NewMenu is Billboard billboard))
+			if (e.NewMenu == null || e.NewMenu is not Billboard billboard)
 			{
 				calendarOpen = false;
 				return;
@@ -163,6 +149,14 @@ namespace ShowBirthdays
 			calendarOpen = true;
 
 			List<ClickableTextureComponent> days = billboard.calendarDays;
+
+			if (days == null || days.Count < 28)
+			{
+				Monitor.Log("Calendar days are messed up for some reason in OnMenuChanged, aborting any drawing by the mod.");
+				return;
+			}
+
+			bdHelper.RecheckBirthdays();
 
 			// List of all the birthday days for the season
 			List<int> list = bdHelper.GetDays(Game1.currentSeason);
@@ -247,7 +241,7 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderingActiveMenu(object sender, RenderingActiveMenuEventArgs e)
 		{
-			if (Game1.activeClickableMenu == null || !(Game1.activeClickableMenu is Billboard billboard))
+			if (Game1.activeClickableMenu == null || Game1.activeClickableMenu is not Billboard billboard)
 				return;
 
 			if (currentCycle < spriteCycleTicks)
@@ -326,7 +320,7 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderedActiveMenu(object sender, RenderedActiveMenuEventArgs e)
 		{
-			if (Game1.activeClickableMenu == null || !(Game1.activeClickableMenu is Billboard billboard) || !config.showIcon)
+			if (Game1.activeClickableMenu == null || Game1.activeClickableMenu is not Billboard billboard || !config.showIcon)
 				return;
 
 			// Get the calendarDays component, it will be null if we're looking at the questboard
@@ -382,6 +376,12 @@ namespace ShowBirthdays
 				// Dangerous conversion, but calendarOpen should prevent problems for now
 				List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard).calendarDays;
 
+				if (days == null || days.Count < 28)
+				{
+					Monitor.Log("Calendar days are messed up for some reason in OnButtonPressed, aborting any drawing by the mod.");
+					return;
+				}
+
 				for (int i = 0; i < days.Count; i++)
 				{
 					// Force the game in UIMode to get the correct scaling for pixel coordinates, since for calendar UIMode = false, for some reason...
@@ -415,19 +415,103 @@ namespace ShowBirthdays
 			});
 		}
 
-		
+
 		class BirthdayHelper
 		{
 			// Reference to the monitor to allow error logging
 			private readonly IMonitor monitor;
+			private readonly IModRegistry modRegistry;
 			public List<Birthday>[] birthdays = new List<Birthday>[4];
 
 
-			public BirthdayHelper(IMonitor m)
+			public BirthdayHelper(IMonitor m, IModRegistry mr)
 			{
 				monitor = m;
+				modRegistry = mr;
 
 				// Initialize the array of lists
+				for (int i = 0; i < birthdays.Length; i++)
+				{
+					birthdays[i] = new List<Birthday>();
+				}
+			}
+
+
+			internal void RecheckBirthdays()
+			{
+				// Reset the birthday lists
+				Reset();
+
+				// Load Custom NPC Exclusions exclusion rules if they exists
+				bool exclusionRulesFound = false;
+				Dictionary<string, string> exclusionRules = new Dictionary<string, string>();
+
+				if (modRegistry.IsLoaded("Esca.CustomNPCExclusions"))
+				{
+					IModInfo modInfo = modRegistry.Get("Esca.CustomNPCExclusions");
+
+					// Is the version new enough to contain the calendar exclusion
+					if (modInfo.Manifest.Version.CompareTo(new SemanticVersion("1.4.0")) >= 0)
+					{
+						monitor.Log("Custom NPC Exclusions 1.4.0 or newer found.");
+
+						try
+						{
+							exclusionRules = Game1.content.Load<Dictionary<string, string>>("Data/CustomNPCExclusions");
+							exclusionRulesFound = true;
+						}
+						catch (Exception e)
+						{
+							monitor.Log("Loading Custom NPC Exclusion rules failed." + e, LogLevel.Error);
+						}
+					}
+				}
+
+				// Loop through all of the NPCs, filter out characters that don't have a proper birthday
+				foreach (NPC n in Utility.getAllCharacters())
+				{
+					// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
+					if (n.isVillager() && n.Birthday_Day > 0)
+					{
+						// Was Custom NPC Exclusions found
+						if (exclusionRulesFound)
+						{
+							// Try if the NPC's name is in the rules
+							if (exclusionRules.TryGetValue(n.Name, out string s1))
+							{
+								// Entry found, split it into the different rules
+								string[] rules = s1.Split(' ', ',', '/');
+
+								for (int i = 0; i < rules.Length; i++)
+								{
+									// Check if it contains 'All' or 'Calendar'
+									if (rules[i].Equals("All", StringComparison.OrdinalIgnoreCase) || rules[i].Equals("Calendar", StringComparison.OrdinalIgnoreCase))
+									{
+										monitor.Log("Custom NPC Exclusions wants to hide " + n.Name + " from the calendar. Complying...");
+										monitor.Log(string.Format("NPC: {0} Birthday: {1} {2} was hidden from the calendar.", n.Name, n.Birthday_Season, n.Birthday_Day));
+										continue;
+									}
+								}
+							}
+						}
+
+						// This check needs further testing, especially with custom npcs
+						if (n.CanSocialize || Game1.player.friendshipData.ContainsKey(n.Name))
+						{
+							AddBirthday(n.Birthday_Season, n.Birthday_Day, n);
+						}
+						else
+						{
+							monitor.Log(string.Format("NPC: {0} Birthday: {1} {2} was hidden from the calendar.", n.Name, n.Birthday_Season, n.Birthday_Day));
+						}
+					}
+				}
+			}
+
+
+			private void Reset()
+			{
+				// Reinitialize the array of lists
 				for (int i = 0; i < birthdays.Length; i++)
 				{
 					birthdays[i] = new List<Birthday>();
@@ -531,7 +615,7 @@ namespace ShowBirthdays
 				}
 				catch (Exception)
 				{
-					monitor.Log("Index problems", LogLevel.Error);
+					monitor.Log("Unknown season " + season, LogLevel.Error);
 					return null;
 				}
 
@@ -557,7 +641,7 @@ namespace ShowBirthdays
 			// The day
 			public int day;
 			// List of NPCs who have a birthday that day
-			private List<NPC> npcs = new List<NPC>();
+			private readonly List<NPC> npcs = new List<NPC>();
 
 			// Keep track of which npc is currently shown for the day
 			private int currentSpriteIndex = 0;
@@ -571,38 +655,15 @@ namespace ShowBirthdays
 			}
 
 
-			public List<NPC> GetNPCs(bool hideUnmet = true)
+			public List<NPC> GetNPCs()
 			{
-				List<NPC> list = new List<NPC>();
-
-				for (int i = 0; i < npcs.Count; i++)
-				{
-					// This should filter out NPCs you haven't met yet, maybe...
-					if (ShowNPC(npcs[i], hideUnmet))
-					{
-						list.Add(npcs[i]);
-					}
-				}
-
-				return list;
+				return npcs;
 			}
 
 
 			public void AddNPC(NPC n)
 			{
 				npcs.Add(n);
-			}
-
-
-			internal bool ShowNPC(NPC npc, bool hideUnmet)
-			{
-				if (!hideUnmet)
-					return true;
-				if (npc.CanSocialize)
-					return true;
-				else if (Game1.player.friendshipData.ContainsKey(npc.Name))
-					return true;
-				return false;
 			}
 
 
