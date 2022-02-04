@@ -125,6 +125,11 @@ namespace ShowBirthdays
 				spriteCycleTicks = 1;
 			}
 
+
+			// TODO: Move this to OnMenuChanged to fix the Leo issue
+			// and add a check for Custom NPC Exclusions' calendar exclusion in Data/CustomNPCExclusions.
+			// See Esca's documentation on it on github https://github.com/Esca-MMC/CustomNPCExclusions.
+			// It shouldn't be too costly of a calculation. Access the exclusion data by Game1.content.Load<T>?
 			foreach (NPC n in Utility.getAllCharacters())
 			{
 				// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
@@ -253,10 +258,17 @@ namespace ShowBirthdays
 			// Get the calendarDays component, it will be null if we're looking at the questboard
 			List<ClickableTextureComponent> days = billboard.calendarDays;
 
-			if (days == null)
+			if (days == null || days.Count < 28)
+			{
+				Monitor.Log("Calendar days are messed up for some reason in OnRenderingMenu, aborting any drawing by the mod.");
 				return;
+			}
 
+			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
+
+			if (listOfDays.Count == 0)
+				return;
 
 			switch (cycleType)
 			{
@@ -320,11 +332,17 @@ namespace ShowBirthdays
 			// Get the calendarDays component, it will be null if we're looking at the questboard
 			List<ClickableTextureComponent> days = billboard.calendarDays;
 
-			if (days == null)
+			if (days == null || days.Count < 28)
+			{
+				Monitor.Log("Calendar days are messed up for some reason in OnRenderedMenu, aborting any drawing by the mod.");
 				return;
+			}
 
 			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
+
+			if (listOfDays.Count == 0)
+				return;
 
 			int offsetX = iconTexture.Width * Game1.pixelZoom;
 			int offsetY = iconTexture.Height * Game1.pixelZoom;
