@@ -35,7 +35,7 @@ namespace ShowBirthdays
 			helper.Events.Display.MenuChanged += OnMenuChanged;
 			helper.Events.Display.RenderingActiveMenu += OnRenderingActiveMenu;
 			helper.Events.Display.RenderedActiveMenu += OnRenderedActiveMenu;
-			helper.Events.GameLoop.GameLaunched += OnLaunched;
+			helper.Events.GameLoop.GameLaunched += OnGameLaunched;
 			helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
 			helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 			helper.Events.Input.ButtonPressed += OnButtonPressed;
@@ -43,20 +43,47 @@ namespace ShowBirthdays
 		}
 
 
-		private void OnLaunched(object sender, GameLaunchedEventArgs e)
+		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
 			// Load the config for generic mod config menu
 			config = Helper.ReadConfig<ModConfig>();
-			var api = Helper.ModRegistry.GetApi<GenericModConfigAPI>("spacechase0.GenericModConfigMenu");
+			var api = Helper.ModRegistry.GetApi<IGenericModConfigAPI>("spacechase0.GenericModConfigMenu");
 
 			// Register options for GMCM
 			if (api != null)
 			{
-				api.RegisterModConfig(ModManifest, () => config = new ModConfig(), () => Helper.WriteConfig(config));
+				api.Register(
+					mod: ModManifest,
+					reset: () => config = new ModConfig(),
+					save: () => Helper.WriteConfig(config)
+				);
 
-				api.RegisterClampedOption(ModManifest, Helper.Translation.Get("duration-label"), Helper.Translation.Get("duration-desc"), () => config.cycleDuration, (int val) => config.cycleDuration = val, 1, 600);
-				api.RegisterChoiceOption(ModManifest, Helper.Translation.Get("type-label"), Helper.Translation.Get("type-desc"), () => config.cycleType, (string val) => config.cycleType = val, ModConfig.cycleTypes);
-				api.RegisterSimpleOption(ModManifest, Helper.Translation.Get("icon-label"), Helper.Translation.Get("icon-desc"), () => config.showIcon, (bool val) => config.showIcon = val);
+				api.AddNumberOption(
+					mod: ModManifest,
+					getValue: () => config.cycleDuration,
+					setValue: (int val) => config.cycleDuration = val,
+					name: () => Helper.Translation.Get("duration-label"),
+					tooltip: () => Helper.Translation.Get("duration-desc"),
+					min: 1,
+					max: 600
+				);
+
+				api.AddTextOption(
+					mod: ModManifest,
+					getValue: () => config.cycleType,
+					setValue: (string val) => config.cycleType = val,
+					name: () => Helper.Translation.Get("type-label"),
+					tooltip: () => Helper.Translation.Get("type-desc"),
+					allowedValues: ModConfig.cycleTypes
+				);
+
+				api.AddBoolOption(
+					mod: ModManifest,
+					getValue: () => config.showIcon,
+					setValue: (bool val) => config.showIcon = val,
+					name: () => Helper.Translation.Get("icon-label"),
+					tooltip: () => Helper.Translation.Get("icon-desc")
+				);
 			}
 
 			// Load the icon from the mod folder
@@ -741,12 +768,11 @@ namespace ShowBirthdays
 	}
 
 
-	public interface GenericModConfigAPI
+	public interface IGenericModConfigAPI
 	{
-		void RegisterModConfig(IManifest mod, Action revertToDefault, Action saveToFile);
-
-		void RegisterClampedOption(IManifest mod, string optionName, string optionDesc, Func<int> optionGet, Action<int> optionSet, int min, int max);
-		void RegisterChoiceOption(IManifest mod, string optionName, string optionDesc, Func<string> optionGet, Action<string> optionSet, string[] choices);
-		void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc, Func<bool> optionGet, Action<bool> optionSet);
+		void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false);
+		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string> tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string> formatValue = null, string fieldId = null);
+		void AddTextOption(IManifest mod, Func<string> getValue, Action<string> setValue, Func<string> name, Func<string> tooltip = null, string[] allowedValues = null, Func<string, string> formatAllowedValue = null, string fieldId = null);
+		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
 	}
 }
