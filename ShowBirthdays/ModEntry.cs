@@ -132,27 +132,8 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnMenuChanged(object sender, MenuChangedEventArgs e)
 		{
-			if (e.NewMenu == null || e.NewMenu is not Billboard billboard)
+			if (!IsCalendarActive(e.NewMenu))
 			{
-				calendarOpen = false;
-				return;
-			}
-
-			// Check if we're looking the calendar or the quest part of the billboard
-			bool dailyQuests = this.Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
-
-			// Do nothing if looking at the quest board
-			if (dailyQuests)
-				return;
-
-			// We are looking at the calendar so update the flag for it
-			calendarOpen = true;
-
-			List<ClickableTextureComponent> days = billboard.calendarDays;
-
-			if (days == null || days.Count < 28)
-			{
-				Monitor.Log("Calendar days are messed up for some reason in OnMenuChanged, aborting any drawing by the mod.");
 				return;
 			}
 
@@ -160,6 +141,10 @@ namespace ShowBirthdays
 
 			// List of all the birthday days for the season
 			List<int> list = bdHelper.GetDays(Game1.currentSeason);
+
+			// Get the calendar's days since the menu is quaranteed to be the calendar
+			Billboard billboard = e.NewMenu as Billboard;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			// NOTE: Remember that i goes from 1 to 28, so substract 1 from it to use as the index!
 			for (int i = 1; i <= days.Count; i++)
@@ -241,7 +226,7 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderingActiveMenu(object sender, RenderingActiveMenuEventArgs e)
 		{
-			if (Game1.activeClickableMenu == null || Game1.activeClickableMenu is not Billboard billboard)
+			if (!IsCalendarActive(Game1.activeClickableMenu))
 				return;
 
 			if (currentCycle < spriteCycleTicks)
@@ -249,20 +234,15 @@ namespace ShowBirthdays
 				currentCycle++;
 			}
 
-			// Get the calendarDays component, it will be null if we're looking at the questboard
-			List<ClickableTextureComponent> days = billboard.calendarDays;
-
-			if (days == null || days.Count < 28)
-			{
-				Monitor.Log("Calendar days are messed up for some reason in OnRenderingMenu, aborting any drawing by the mod.");
-				return;
-			}
-
 			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
 			if (listOfDays.Count == 0)
 				return;
+
+			// Get the calendar's days since the menu is quaranteed to be the calendar
+			Billboard billboard = Game1.activeClickableMenu as Billboard;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			switch (cycleType)
 			{
@@ -320,23 +300,18 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderedActiveMenu(object sender, RenderedActiveMenuEventArgs e)
 		{
-			if (Game1.activeClickableMenu == null || Game1.activeClickableMenu is not Billboard billboard || !config.showIcon)
+			if (!config.showIcon || !IsCalendarActive(Game1.activeClickableMenu))
 				return;
-
-			// Get the calendarDays component, it will be null if we're looking at the questboard
-			List<ClickableTextureComponent> days = billboard.calendarDays;
-
-			if (days == null || days.Count < 28)
-			{
-				Monitor.Log("Calendar days are messed up for some reason in OnRenderedMenu, aborting any drawing by the mod.");
-				return;
-			}
 
 			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
 			if (listOfDays.Count == 0)
 				return;
+
+			// Get the calendar's days since the menu is quaranteed to be the calendar
+			Billboard billboard = Game1.activeClickableMenu as Billboard;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			int offsetX = iconTexture.Width * Game1.pixelZoom;
 			int offsetY = iconTexture.Height * Game1.pixelZoom;
@@ -402,6 +377,7 @@ namespace ShowBirthdays
 
 		/// <summary>
 		/// Tracks the cursor position to change the sprite if hovered over
+		/// TODO: Broken for 1.5.6 for some reason. Did the ui scaling get fixed/changed or something?
 		/// </summary>
 		private void OnCursorMoved(object sender, CursorMovedEventArgs e)
 		{
@@ -413,6 +389,41 @@ namespace ShowBirthdays
 			{
 				cursorPos = e.NewPosition.GetScaledScreenPixels();
 			});
+		}
+
+
+		/// <summary>
+		/// Checks if the birthday calendar is active and updates the flag for it
+		/// </summary>
+		private bool IsCalendarActive(IClickableMenu activeMenu)
+		{
+			// Set to false by default to avoid repeating and switch to true at the end if everything was okay
+			calendarOpen = false;
+
+			if (activeMenu == null || activeMenu is not Billboard billboard)
+			{
+				return false;
+			}
+
+			// Check if we're looking the calendar or the quest part of the billboard
+			bool dailyQuests = this.Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
+
+			// Do nothing if looking at the quest board
+			if (dailyQuests)
+				return false;
+
+			List<ClickableTextureComponent> days = billboard.calendarDays;
+
+			if (days == null || days.Count< 28)
+			{
+				Monitor.Log("Calendar days are messed up for some reason in OnMenuChanged, aborting any drawing by the mod.");
+				return false;
+			}
+
+			// We are looking at the calendar and everything seems to be ok so update the flag for it
+			calendarOpen = true;
+
+			return true;
 		}
 
 
