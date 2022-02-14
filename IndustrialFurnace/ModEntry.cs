@@ -369,10 +369,35 @@ namespace IndustrialFurnace
 
             if (GMCMApi != null)
             {
-                GMCMApi.RegisterModConfig(ModManifest, () => config = new ModConfig(), () => Helper.WriteConfig(config));
-                GMCMApi.RegisterLabel(ModManifest, i18n.Get("gmcm.main-label"), "");
-                GMCMApi.RegisterClampedOption(ModManifest, i18n.Get("gmcm.coal-amount-label"), i18n.Get("gmcm.coal-amount-description"), () => config.CoalAmount, (int val) => config.CoalAmount = val, 1, 100);
-                GMCMApi.RegisterSimpleOption(ModManifest, i18n.Get("gmcm.instant-smelting-label"), i18n.Get("gmcm.instant-smelting-description"), () => config.InstantSmelting, (bool val) => config.InstantSmelting = val);
+                GMCMApi.Register(
+					mod: ModManifest,
+					reset: () => config = new ModConfig(),
+					save: () => Helper.WriteConfig(config)
+				);
+
+                GMCMApi.AddSectionTitle(
+					mod: ModManifest,
+					text: () => i18n.Get("gmcm.main-label"),
+					tooltip: null
+				);
+
+                GMCMApi.AddNumberOption(
+					mod: ModManifest,
+					getValue: () => config.CoalAmount,
+					setValue: (int val) => config.CoalAmount = val,
+					name: () => i18n.Get("gmcm.coal-amount-label"),
+					tooltip: () => i18n.Get("gmcm.coal-amount-description"),
+					min: 1,
+					max: 100
+				);
+
+                GMCMApi.AddBoolOption(
+					mod: ModManifest,
+					getValue: () => config.InstantSmelting,
+					setValue: (bool val) => config.InstantSmelting = val,
+					name: () => i18n.Get("gmcm.instant-smelting-label"),
+					tooltip: () => i18n.Get("gmcm.instant-smelting-description")
+				);
             }
         }
 
@@ -1037,9 +1062,9 @@ namespace IndustrialFurnace
     /// </summary>
     public interface IGenericModConfigMenuAPI
     {
-        void RegisterModConfig(IManifest mod, Action revertToDefault, Action saveToFile);
-        void RegisterLabel(IManifest mod, string labelName, string labelDesc);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc, Func<bool> optionGet, Action<bool> optionSet);
-        void RegisterClampedOption(IManifest mod, string optionName, string optionDesc, Func<int> optionGet, Action<int> optionSet, int min, int max);
-    }
+		void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false);
+		void AddSectionTitle(IManifest mod, Func<string> text, Func<string> tooltip = null);
+		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
+		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string> tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string> formatValue = null, string fieldId = null);
+	}
 }
