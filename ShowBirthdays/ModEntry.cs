@@ -252,7 +252,7 @@ namespace ShowBirthdays
 			switch (cycleType)
 			{
 				case CycleType.Always:
-					if (currentCycle == config.cycleDuration)
+					if (currentCycle >= config.cycleDuration)
 					{
 						for (int i = 0; i < listOfDays.Count; i++)
 						{
@@ -272,7 +272,7 @@ namespace ShowBirthdays
 					}
 					break;
 				case CycleType.Hover:
-					if (currentCycle == config.cycleDuration)
+					if (currentCycle >= config.cycleDuration)
 					{
 						for (int i = 0; i < listOfDays.Count; i++)
 						{
