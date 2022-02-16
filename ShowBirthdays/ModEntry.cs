@@ -16,8 +16,7 @@ namespace ShowBirthdays
 		// Flag for if the calendar is open
 		private bool calendarOpen = false;
 
-		// Interval in ticks for changing the birthday sprite
-		private int spriteCycleTicks = 120;
+		// Current cycle in render ticks for changing the birthday sprite
 		private int currentCycle = 0;
 
 		private int clickedDay = -1;
@@ -39,21 +38,21 @@ namespace ShowBirthdays
 			helper.Events.GameLoop.GameLaunched += OnGameLaunched;
 			helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
 			helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
-			helper.Events.Input.ButtonPressed += OnButtonPressed;
-			helper.Events.Input.CursorMoved += OnCursorMoved;
 		}
 
 
+		/// <summary>
+		/// Get whether this instance can load the initial version of the given asset.
+		/// </summary>
 		public bool CanLoad<T>(IAssetInfo asset)
 		{
-			if (asset.AssetNameEquals(assetName))
-			{
-				return true;
-			}
-
-			return false;
+			return asset.AssetNameEquals(assetName);
 		}
 
+
+		/// <summary>
+		/// Load a matched asset.
+		/// </summary>
 		public T Load<T>(IAssetInfo asset)
 		{
 			return Helper.Content.Load<T>(iconPath, ContentSource.ModFolder);
@@ -88,7 +87,8 @@ namespace ShowBirthdays
 				api.AddTextOption(
 					mod: ModManifest,
 					getValue: () => config.cycleType,
-					setValue: (string val) => config.cycleType = val,
+					//setValue: (string val) => config.cycleType = val,
+					setValue: (string val) => ChangeCycleType(val),
 					name: () => Helper.Translation.Get("type-label"),
 					tooltip: () => Helper.Translation.Get("type-desc"),
 					allowedValues: ModConfig.cycleTypes
@@ -120,49 +120,11 @@ namespace ShowBirthdays
 			// Refresh the config
 			config = Helper.ReadConfig<ModConfig>();
 
-			// Subscribe to the correct events to prevent unnecessary event checks
-			switch (cycleType)
-			{
-				case CycleType.Always:
-					break;
-				case CycleType.Hover:
-					Helper.Events.Input.CursorMoved += OnCursorMoved;
-					break;
-				case CycleType.Click:
-					Helper.Events.Input.ButtonPressed += OnButtonPressed;
-					break;
-				default:
-					break;
-			}
-
-			// Read the config options and fix the values if needed
-			switch (config.cycleType)
-			{
-				case "Always":
-					cycleType = CycleType.Always;
-					break;
-				case "Hover":
-					cycleType = CycleType.Hover;
-					break;
-				case "Click":
-					cycleType = CycleType.Click;
-					break;
-				default:
-					Monitor.Log("The only accepted cycle types are Always, Hover and Click. Defaulting to Always.", LogLevel.Error);
-					cycleType = CycleType.Always;
-					break;
-			}
-
-			spriteCycleTicks = config.cycleDuration;
-			if (spriteCycleTicks < 1)
-			{
-				Monitor.Log("Cycle duration can't be less than 1", LogLevel.Error);
-				spriteCycleTicks = 1;
-			}
+			// Update the cycle type
+			ChangeCycleType(config.cycleType);
 
 			// Load the icon from the mod folder
 			iconTexture = Game1.content.Load<Texture2D>(assetName);
-			//iconTexture = Helper.Content.Load<Texture2D>(iconPath, ContentSource.ModFolder);
 
 			// Check if the loading succeeded
 			if (iconTexture == null)
@@ -228,7 +190,7 @@ namespace ShowBirthdays
 
 						NPC n = listOfNPCs[j];
 						// Build the hover text just like in the base game. I'm not touching that.
-						newHoverText += ((n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName));
+						newHoverText += (n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName);
 					}
 				}
 				else
@@ -274,10 +236,8 @@ namespace ShowBirthdays
 			if (!IsCalendarActive(Game1.activeClickableMenu))
 				return;
 
-			if (currentCycle < spriteCycleTicks)
-			{
+			if (currentCycle < config.cycleDuration)
 				currentCycle++;
-			}
 
 			// Get birthday days that are shared
 			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
@@ -292,7 +252,7 @@ namespace ShowBirthdays
 			switch (cycleType)
 			{
 				case CycleType.Always:
-					if (currentCycle == spriteCycleTicks)
+					if (currentCycle == config.cycleDuration)
 					{
 						for (int i = 0; i < listOfDays.Count; i++)
 						{
@@ -312,7 +272,7 @@ namespace ShowBirthdays
 					}
 					break;
 				case CycleType.Hover:
-					if (currentCycle == spriteCycleTicks)
+					if (currentCycle == config.cycleDuration)
 					{
 						for (int i = 0; i < listOfDays.Count; i++)
 						{
@@ -446,9 +406,7 @@ namespace ShowBirthdays
 			calendarOpen = false;
 
 			if (activeMenu == null || activeMenu is not Billboard billboard)
-			{
 				return false;
-			}
 
 			// Check if we're looking the calendar or the quest part of the billboard
 			bool dailyQuests = this.Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
@@ -469,6 +427,39 @@ namespace ShowBirthdays
 			calendarOpen = true;
 
 			return true;
+		}
+
+
+		/// <summary>
+		/// Updates the cycle type and the needed input events
+		/// </summary>
+		private void ChangeCycleType(string newType)
+		{
+			// Unsubscribe from the events just incase
+			Helper.Events.Input.ButtonPressed -= OnButtonPressed;
+			Helper.Events.Input.CursorMoved -= OnCursorMoved;
+
+			//Change the cycle type and subscribe to the correct events to prevent unnecessary event checks
+			config.cycleType = newType;
+
+			switch (newType)
+			{
+				case "Always":
+					cycleType = CycleType.Always;
+					break;
+				case "Hover":
+					cycleType = CycleType.Hover;
+					Helper.Events.Input.CursorMoved += OnCursorMoved;
+					break;
+				case "Click":
+					cycleType = CycleType.Click;
+					Helper.Events.Input.ButtonPressed += OnButtonPressed;
+					break;
+				default:
+					Monitor.Log("The only accepted cycle types are Always, Hover and Click. Defaulting to Always.", LogLevel.Error);
+					cycleType = CycleType.Always;
+					break;
+			}
 		}
 
 
@@ -546,7 +537,6 @@ namespace ShowBirthdays
 									if (rules[i].Equals("All", StringComparison.OrdinalIgnoreCase) || rules[i].Equals("Calendar", StringComparison.OrdinalIgnoreCase))
 									{
 										monitor.Log("Custom NPC Exclusions wants to hide " + n.Name + " from the calendar. Complying...");
-										//monitor.Log(string.Format("NPC: {0} Birthday: {1} {2} was hidden from the calendar.", n.Name, n.Birthday_Season, n.Birthday_Day));
 										hideBirthday = true;
 										break;
 									}
