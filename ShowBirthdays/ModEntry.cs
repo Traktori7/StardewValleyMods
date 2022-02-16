@@ -511,6 +511,8 @@ namespace ShowBirthdays
 					// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
 					if (n.isVillager() && n.Birthday_Day > 0)
 					{
+						bool hideBirthday = false;
+
 						// Was Custom NPC Exclusions found
 						if (exclusionRulesFound)
 						{
@@ -526,15 +528,21 @@ namespace ShowBirthdays
 									if (rules[i].Equals("All", StringComparison.OrdinalIgnoreCase) || rules[i].Equals("Calendar", StringComparison.OrdinalIgnoreCase))
 									{
 										monitor.Log("Custom NPC Exclusions wants to hide " + n.Name + " from the calendar. Complying...");
-										monitor.Log(string.Format("NPC: {0} Birthday: {1} {2} was hidden from the calendar.", n.Name, n.Birthday_Season, n.Birthday_Day));
-										continue;
+										//monitor.Log(string.Format("NPC: {0} Birthday: {1} {2} was hidden from the calendar.", n.Name, n.Birthday_Season, n.Birthday_Day));
+										hideBirthday = true;
+										break;
 									}
 								}
 							}
 						}
 
 						// This check needs further testing, especially with custom npcs
-						if (n.CanSocialize || Game1.player.friendshipData.ContainsKey(n.Name))
+						if (!n.CanSocialize && !Game1.player.friendshipData.ContainsKey(n.Name))
+						{
+							hideBirthday = true;
+						}
+
+						if (!hideBirthday)
 						{
 							AddBirthday(n.Birthday_Season, n.Birthday_Day, n);
 						}
