@@ -10,7 +10,7 @@ using StardewValley.Menus;
 
 namespace ShowBirthdays
 {
-	class ModEntry : Mod
+	class ModEntry : Mod, IAssetLoader
 	{
 		private CycleType cycleType;
 		// Flag for if the calendar is open
@@ -27,6 +27,7 @@ namespace ShowBirthdays
 		private ModConfig config;
 
 		private Texture2D iconTexture;
+		private readonly string assetName = "Traktori.ShowBirthdays/Icon";
 		private readonly string iconPath = "assets/Icon.png";
 
 
@@ -40,6 +41,22 @@ namespace ShowBirthdays
 			helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 			helper.Events.Input.ButtonPressed += OnButtonPressed;
 			helper.Events.Input.CursorMoved += OnCursorMoved;
+		}
+
+
+		public bool CanLoad<T>(IAssetInfo asset)
+		{
+			if (asset.AssetNameEquals(assetName))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public T Load<T>(IAssetInfo asset)
+		{
+			return Helper.Content.Load<T>(iconPath, ContentSource.ModFolder);
 		}
 
 
@@ -84,15 +101,6 @@ namespace ShowBirthdays
 					name: () => Helper.Translation.Get("icon-label"),
 					tooltip: () => Helper.Translation.Get("icon-desc")
 				);
-			}
-
-			// Load the icon from the mod folder
-			iconTexture = Helper.Content.Load<Texture2D>(iconPath, ContentSource.ModFolder);
-
-			// Check if the loading succeeded
-			if (iconTexture == null)
-			{
-				Monitor.Log("Failed loading " + iconPath, LogLevel.Error);
 			}
 		}
 
@@ -150,6 +158,16 @@ namespace ShowBirthdays
 			{
 				Monitor.Log("Cycle duration can't be less than 1", LogLevel.Error);
 				spriteCycleTicks = 1;
+			}
+
+			// Load the icon from the mod folder
+			iconTexture = Game1.content.Load<Texture2D>(assetName);
+			//iconTexture = Helper.Content.Load<Texture2D>(iconPath, ContentSource.ModFolder);
+
+			// Check if the loading succeeded
+			if (iconTexture == null)
+			{
+				Monitor.Log("Failed loading the icon " + assetName, LogLevel.Error);
 			}
 		}
 
