@@ -227,7 +227,8 @@ namespace IndustrialFurnace
         /// <summary>Raised before the game state is updated</summary>
         private void OnUpdateTicking(object sender, UpdateTickingEventArgs e)
         {
-            if (Game1.getFarm() is null) return;
+			// This should be true if the player has another window focused or the game is still in the main menu
+            if (!Game1.game1.IsActive || Game1.getFarm() is null) return;
 
             // Create a smoke sprite
             if (smokeAnimationData.Enabled && e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
