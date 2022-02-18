@@ -25,14 +25,23 @@ namespace IndustrialFurnace
 
 		private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
 
-		// defaultAssetName and assetOffName lead to loading the same texture, but the first is for SMAPI's content loading
+		// Texture strings
 		private readonly string defaultAssetName = "Buildings/" + furnaceBuildingType;
 		private readonly string assetOnName = "Traktori.IndustrialFurnace/FurnaceOn";
 
 		private readonly string onPngName = "IndustrialFurnaceOn.png";
 		private readonly string offPngName = "IndustrialFurnaceOff.png";
 
-		// Use a default texture, so the SMAPI won't freak out if exiting to menu
+		private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
+		private readonly string smokeAnimationSpriteName = "Traktori.IndustrialFurnace/SmokeSprite";
+		private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
+		private readonly string fireAnimationSpriteName = "Traktori.IndustrialFurnace/FireSprite";
+
+		// Data strings
+		private readonly string smeltingRulesDataName = "Traktori.IndustrialFurnace/SmeltingRules";
+		private readonly string smokeAnimationDataName = "Traktori.IndustrialFurnace/SmokeAnimationData";
+		private readonly string fireAnimationDataName = "Traktori.IndustrialFurnace/FireAnimationData";
+
 		private readonly string blueprintDataPath = Path.Combine("assets", "IndustrialFurnaceBlueprint.json");
 		private readonly string smeltingRulesDataPath = Path.Combine("assets", "SmeltingRules.json");
 		private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
@@ -55,10 +64,7 @@ namespace IndustrialFurnace
 		private bool customSmokeSpriteExists = false;
 		private bool customFireSpriteExists = false;
 
-		private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
-		private readonly string smokeAnimationSpriteName = "Traktori.IndustrialFurnace/SmokeSprite";
-		private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
-		private readonly string fireAnimationSpriteName = "Traktori.IndustrialFurnace/FireSprite";
+		
 
 		private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
 		
@@ -96,10 +102,13 @@ namespace IndustrialFurnace
 
 			// TODO: Use the name specified in the blueprint?
 			blueprintData = helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath);
-			newSmeltingRules = helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
+			//newSmeltingRules = helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
+			newSmeltingRules = Game1.content.Load<SmeltingRulesContainer>(smeltingRulesDataName);
 			CheckSmeltingRules();
-			smokeAnimationData = helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
-			fireAnimationData = helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
+			//smokeAnimationData = helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
+			smokeAnimationData = Game1.content.Load<SmokeAnimationData>(smokeAnimationDataName);
+			//fireAnimationData = helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
+			fireAnimationData = Game1.content.Load<FireAnimationData>(fireAnimationDataName);
 
 			helper.Events.Display.RenderedWorld += OnRenderedWorld;
 			helper.Events.Display.MenuChanged += OnMenuChanged;
@@ -136,6 +145,15 @@ namespace IndustrialFurnace
 				return true;
 
 			else if (asset.AssetNameEquals(fireAnimationSpriteName))
+				return true;
+
+			else if (asset.AssetNameEquals(smeltingRulesDataName))
+				return true;
+
+			else if (asset.AssetNameEquals(smokeAnimationDataName))
+				return true;
+
+			else if (asset.AssetNameEquals(fireAnimationDataName))
 				return true;
 
 			return false;
@@ -179,6 +197,18 @@ namespace IndustrialFurnace
 			else if (asset.AssetNameEquals(fireAnimationSpriteName))
 			{
 				return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
+			}
+			else if (asset.AssetNameEquals(smeltingRulesDataName))
+			{
+				return (T)(object)Helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
+			}
+			else if	(asset.AssetNameEquals(smokeAnimationDataName))
+			{
+				return (T)(object)Helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
+			}
+			else if (asset.AssetNameEquals(fireAnimationDataName))
+			{
+				return (T)(object)Helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
 			}
 
 			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
