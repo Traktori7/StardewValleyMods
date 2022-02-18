@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -26,7 +27,7 @@ namespace ShowBirthdays
 		private ModConfig config;
 
 		private Texture2D iconTexture;
-		private readonly string assetName = "Traktori.ShowBirthdays/Icon";
+		private readonly string assetName = PathUtilities.NormalizeAssetName("Traktori.ShowBirthdays/Icon");
 		private readonly string iconPath = "assets/Icon.png";
 
 

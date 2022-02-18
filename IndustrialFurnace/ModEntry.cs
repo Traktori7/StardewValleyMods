@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
@@ -23,24 +24,25 @@ namespace IndustrialFurnace
 		private const string saveDataRefreshedMessage = "Save data refreshed";
 		private const string requestSaveData = "Request save data";
 
-		private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
+		private readonly string blueprintsPath = PathUtilities.NormalizeAssetName("Data/Blueprints");
 
 		// Texture strings
-		private readonly string defaultAssetName = "Buildings/" + furnaceBuildingType;
-		private readonly string assetOnName = "Traktori.IndustrialFurnace/FurnaceOn";
+		// I think only this one needs to be normalized since it points to an actual file path to make it work on linux
+		private readonly string defaultAssetName = PathUtilities.NormalizeAssetName("Buildings/" + furnaceBuildingType);
+		private readonly string assetOnName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/FurnaceOn");
 
 		private readonly string onPngName = "IndustrialFurnaceOn.png";
 		private readonly string offPngName = "IndustrialFurnaceOff.png";
 
 		private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
-		private readonly string smokeAnimationSpriteName = "Traktori.IndustrialFurnace/SmokeSprite";
+		private readonly string smokeAnimationSpriteName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/SmokeSprite");
 		private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
-		private readonly string fireAnimationSpriteName = "Traktori.IndustrialFurnace/FireSprite";
+		private readonly string fireAnimationSpriteName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/FireSprite");
 
 		// Data strings
-		private readonly string smeltingRulesDataName = "Traktori.IndustrialFurnace/SmeltingRules";
-		private readonly string smokeAnimationDataName = "Traktori.IndustrialFurnace/SmokeAnimationData";
-		private readonly string fireAnimationDataName = "Traktori.IndustrialFurnace/FireAnimationData";
+		private readonly string smeltingRulesDataName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/SmeltingRules");
+		private readonly string smokeAnimationDataName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/SmokeAnimationData");
+		private readonly string fireAnimationDataName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/FireAnimationData");
 
 		private readonly string blueprintDataPath = Path.Combine("assets", "IndustrialFurnaceBlueprint.json");
 		private readonly string smeltingRulesDataPath = Path.Combine("assets", "SmeltingRules.json");
