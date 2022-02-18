@@ -23,11 +23,17 @@ namespace IndustrialFurnace
         private const string saveDataRefreshedMessage = "Save data refreshed";
         private const string requestSaveData = "Request save data";
 
-        private readonly string assetPath = Path.Combine("Buildings", furnaceBuildingType);
+        //private readonly string assetPath = Path.Combine("Buildings", furnaceBuildingType);
         private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
 
-        // Use a default texture, so the SMAPI won't freak out if exiting to menu
-        private readonly string defaultFurnaceTexturePath = Path.Combine("assets", "IndustrialFurnaceOff.png");
+		private readonly string assetOnName = "Traktori.IndustrialFurnace/FurnaceOn";
+		private readonly string assetOffName = "Traktori.IndustrialFurnace/FurnaceOff";
+
+		private readonly string onPngName = "IndustrialFurnaceOn.png";
+		private readonly string offPngName = "IndustrialFurnaceOff.png";
+
+		// Use a default texture, so the SMAPI won't freak out if exiting to menu
+		//private readonly string defaultFurnaceTexturePath = Path.Combine("assets", "IndustrialFurnaceOff.png");
         private readonly string blueprintDataPath = Path.Combine("assets", "IndustrialFurnaceBlueprint.json");
         private readonly string smeltingRulesDataPath = Path.Combine("assets", "SmeltingRules.json");
         private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
@@ -118,44 +124,64 @@ namespace IndustrialFurnace
         /// <summary>Get whether this instance can load the initial version of the given asset.</summary>
         /// <param name="asset">Basic metadata about the asset being loaded.</param>
         public bool CanLoad<T>(IAssetInfo asset)
-        {
-            if (asset.AssetNameEquals(assetPath))
-            {
-                return true;
-            }
-            else if (asset.AssetNameEquals(smokeAnimationSpritePath))
-            {
-                return true;
-            }
-            else if (asset.AssetNameEquals(fireAnimationSpritePath))
-            {
-                return true;
-            }
+		{
+			if (asset.AssetNameEquals(assetOnName))
+				return true;
+
+			else if (asset.AssetNameEquals(assetOffName))
+				return true;
+
+			else if (asset.AssetNameEquals(smokeAnimationSpritePath))
+				return true;
+
+			else if (asset.AssetNameEquals(fireAnimationSpritePath))
+				return true;
 
             return false;
         }
 
 
-        /// <summary>Load a matched asset.</summary>
-        /// <param name="asset">Basic metadata about the asset being loaded.</param>
-        public T Load<T>(IAssetInfo asset)
-        {
-            if (asset.AssetNameEquals(assetPath))
-            {
-                return Helper.Content.Load<T>(defaultFurnaceTexturePath, ContentSource.ModFolder);
-            }
-            else if (asset.AssetNameEquals(smokeAnimationSpritePath))
-            {
-                return Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
-            }
-            else if (asset.AssetNameEquals(fireAnimationSpritePath))
-            {
-                return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
-            }
+		/// <summary>Load a matched asset.</summary>
+		/// <param name="asset">Basic metadata about the asset being loaded.</param>
+		public T Load<T>(IAssetInfo asset)
+		{
+			if (asset.AssetNameEquals(assetOnName))
+			{
+				string seasonalTextureName = $"{Game1.currentSeason}_{onPngName}";
 
-            throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
-        }
+				if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", seasonalTextureName)))
+				{
+					Monitor.Log($"Using the texture for {Game1.currentSeason}.");
+					return Helper.Content.Load<T>(Path.Combine("assets", seasonalTextureName), ContentSource.ModFolder);
+				}
 
+				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
+				return Helper.Content.Load<T>(Path.Combine("assets", onPngName), ContentSource.ModFolder);
+			}
+			else if (asset.AssetNameEquals(assetOffName))
+			{
+				string seasonalTextureName = $"{Game1.currentSeason}_{offPngName}";
+
+				if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", seasonalTextureName)))
+				{
+					Monitor.Log($"Using the texture for {Game1.currentSeason}.");
+					return Helper.Content.Load<T>(Path.Combine("assets", seasonalTextureName), ContentSource.ModFolder);
+				}
+
+				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
+				return Helper.Content.Load<T>(Path.Combine("assets", offPngName), ContentSource.ModFolder);
+			}
+			else if (asset.AssetNameEquals(smokeAnimationSpritePath))
+			{
+				return Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
+			}
+			else if (asset.AssetNameEquals(fireAnimationSpritePath))
+			{
+				return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
+			}
+
+			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+		}
 
         /// <summary>Get whether this instance can edit the given asset.</summary>
         /// <param name="asset">Basic metadata about the asset being edit.</param>
@@ -535,12 +561,14 @@ namespace IndustrialFurnace
         /// <summary>The event called when the day starts.</summary>
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
-            // Refresh the textures
-            furnaceOn = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("On")));
-            furnaceOff = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("Off")));
+			// Refresh the textures
+			//furnaceOn = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("On")));
+			//furnaceOff = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("Off")));
+			furnaceOn = Game1.content.Load<Texture2D>(assetOnName);
+			furnaceOff = Game1.content.Load<Texture2D>(assetOffName);
 
 
-            if (Game1.player.IsMainPlayer)
+			if (Game1.player.IsMainPlayer)
             {
                 // Finish smelting items
                 foreach (IndustrialFurnaceController furnace in furnaces)
@@ -1042,9 +1070,11 @@ namespace IndustrialFurnace
 
         /// <summary>Get the texture name, checks for seasonal textures</summary>
         /// <param name="state">The state of the furnace, either "On" or "Off"</param>
-        private string GetTexturePath(string state)
+        /*private string GetTexturePath(string state)
         {
-            string textureName = $"{Game1.currentSeason}_IndustrialFurnace{state}.png";
+			Path.Combine("assets",
+
+			string textureName = $"{Game1.currentSeason}_IndustrialFurnace{state}.png";
 
             if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", textureName)))
             {
@@ -1054,7 +1084,7 @@ namespace IndustrialFurnace
 
             Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
             return $"IndustrialFurnace{state}.png";
-        }
+        }*/
     }
 
 
