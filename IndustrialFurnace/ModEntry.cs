@@ -23,17 +23,16 @@ namespace IndustrialFurnace
 		private const string saveDataRefreshedMessage = "Save data refreshed";
 		private const string requestSaveData = "Request save data";
 
-		//private readonly string assetPath = Path.Combine("Buildings", furnaceBuildingType);
 		private readonly string blueprintsPath = Path.Combine("Data", "Blueprints");
 
+		// defaultAssetName and assetOffName lead to loading the same texture, but the first is for SMAPI's content loading
+		private readonly string defaultAssetName = "Buildings/" + furnaceBuildingType;
 		private readonly string assetOnName = "Traktori.IndustrialFurnace/FurnaceOn";
-		private readonly string assetOffName = "Traktori.IndustrialFurnace/FurnaceOff";
 
 		private readonly string onPngName = "IndustrialFurnaceOn.png";
 		private readonly string offPngName = "IndustrialFurnaceOff.png";
 
 		// Use a default texture, so the SMAPI won't freak out if exiting to menu
-		//private readonly string defaultFurnaceTexturePath = Path.Combine("assets", "IndustrialFurnaceOff.png");
 		private readonly string blueprintDataPath = Path.Combine("assets", "IndustrialFurnaceBlueprint.json");
 		private readonly string smeltingRulesDataPath = Path.Combine("assets", "SmeltingRules.json");
 		private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
@@ -57,7 +56,9 @@ namespace IndustrialFurnace
 		private bool customFireSpriteExists = false;
 
 		private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
+		private readonly string smokeAnimationSpriteName = "Traktori.IndustrialFurnace/SmokeSprite";
 		private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
+		private readonly string fireAnimationSpriteName = "Traktori.IndustrialFurnace/FireSprite";
 
 		private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
 		
@@ -128,13 +129,13 @@ namespace IndustrialFurnace
 			if (asset.AssetNameEquals(assetOnName))
 				return true;
 
-			else if (asset.AssetNameEquals(assetOffName))
+			else if (asset.AssetNameEquals(defaultAssetName))
 				return true;
 
-			else if (asset.AssetNameEquals(smokeAnimationSpritePath))
+			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
 				return true;
 
-			else if (asset.AssetNameEquals(fireAnimationSpritePath))
+			else if (asset.AssetNameEquals(fireAnimationSpriteName))
 				return true;
 
 			return false;
@@ -158,7 +159,7 @@ namespace IndustrialFurnace
 				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
 				return Helper.Content.Load<T>(Path.Combine("assets", onPngName), ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(assetOffName))
+			else if (asset.AssetNameEquals(defaultAssetName))
 			{
 				string seasonalTextureName = $"{Game1.currentSeason}_{offPngName}";
 
@@ -171,17 +172,18 @@ namespace IndustrialFurnace
 				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
 				return Helper.Content.Load<T>(Path.Combine("assets", offPngName), ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(smokeAnimationSpritePath))
+			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
 			{
 				return Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(fireAnimationSpritePath))
+			else if (asset.AssetNameEquals(fireAnimationSpriteName))
 			{
 				return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
 			}
 
 			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
 		}
+
 
 		/// <summary>Get whether this instance can edit the given asset.</summary>
 		/// <param name="asset">Basic metadata about the asset being edit.</param>
@@ -275,7 +277,7 @@ namespace IndustrialFurnace
 						// See if we should do a custom sprite, or use the default
 						if (customSmokeSpriteExists)
 						{
-							sprite = new TemporaryAnimatedSprite(smokeAnimationSpritePath,
+							sprite = new TemporaryAnimatedSprite(smokeAnimationSpriteName,
 								new Rectangle(0, 0, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY),
 								new Vector2(x * 64 + smokeAnimationData.SpawnXOffset, y * 64 + smokeAnimationData.SpawnYOffset),
 								false, 1f / 500f, Color.Gray)
@@ -340,7 +342,7 @@ namespace IndustrialFurnace
 							Vector2 pos = new Vector2(x * 64f + fireAnimationData.SpawnXOffset + (float)randomX,
 								y * 64f + fireAnimationData.SpawnYOffset + (float)randomY);
 
-							sprite = new TemporaryAnimatedSprite(fireAnimationSpritePath,
+							sprite = new TemporaryAnimatedSprite(fireAnimationSpriteName,
 								new Rectangle(0, 0, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY),
 								fireAnimationData.AnimationSpeed, fireAnimationData.AnimationLength, 10, pos, false,
 								false,
@@ -562,10 +564,8 @@ namespace IndustrialFurnace
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
 			// Refresh the textures
-			//furnaceOn = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("On")));
-			//furnaceOff = Helper.Content.Load<Texture2D>(Path.Combine("assets", GetTexturePath("Off")));
 			furnaceOn = Game1.content.Load<Texture2D>(assetOnName);
-			furnaceOff = Game1.content.Load<Texture2D>(assetOffName);
+			furnaceOff = Game1.content.Load<Texture2D>(defaultAssetName);
 
 
 			if (Game1.player.IsMainPlayer)
