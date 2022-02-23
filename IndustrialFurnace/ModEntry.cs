@@ -60,8 +60,8 @@ namespace IndustrialFurnace
 
 		private int currentlyLookingAtFurnace = -1;
 
-		private Texture2D furnaceOn;
-		private Texture2D furnaceOff;
+		//private Texture2D furnaceOn;
+		//private Texture2D furnaceOff;
 
 		private bool customSmokeSpriteExists = false;
 		private bool customFireSpriteExists = false;
@@ -176,7 +176,7 @@ namespace IndustrialFurnace
 					return Helper.Content.Load<T>(Path.Combine("assets", seasonalTextureName), ContentSource.ModFolder);
 				}
 
-				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
+				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason} state On. Using the default.");
 				return Helper.Content.Load<T>(Path.Combine("assets", onPngName), ContentSource.ModFolder);
 			}
 			else if (asset.AssetNameEquals(defaultAssetName))
@@ -189,7 +189,7 @@ namespace IndustrialFurnace
 					return Helper.Content.Load<T>(Path.Combine("assets", seasonalTextureName), ContentSource.ModFolder);
 				}
 
-				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason}. Using the default.");
+				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason} state Off. Using the default.");
 				return Helper.Content.Load<T>(Path.Combine("assets", offPngName), ContentSource.ModFolder);
 			}
 			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
@@ -595,11 +595,6 @@ namespace IndustrialFurnace
 		/// <summary>The event called when the day starts.</summary>
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
-			// Refresh the textures
-			furnaceOn = Game1.content.Load<Texture2D>(assetOnName);
-			furnaceOff = Game1.content.Load<Texture2D>(defaultAssetName);
-
-
 			if (Game1.player.IsMainPlayer)
 			{
 				// Finish smelting items
@@ -930,11 +925,11 @@ namespace IndustrialFurnace
 		{
 			if (currentlyOn)
 			{
-				building.texture = new Lazy<Texture2D>(() => this.furnaceOn);
+				building.texture = new Lazy<Texture2D>(() => Game1.content.Load<Texture2D>(assetOnName));
 			}
 			else
 			{
-				building.texture = new Lazy<Texture2D>(() => this.furnaceOff);
+				building.texture = new Lazy<Texture2D>(() => Game1.content.Load<Texture2D>(defaultAssetName));
 			}
 		}
 
