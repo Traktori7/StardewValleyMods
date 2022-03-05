@@ -75,7 +75,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Parses the furnace controller data from the save data</summary>
-		public void ParseModSaveDataToControllers(List<IndustrialFurnaceController> furnaces, ModEntry mod)
+		/*public void ParseModSaveDataToControllers(List<IndustrialFurnaceController> furnaces, ModEntry mod)
 		{
 			// Assume the lists are equally as long
 
@@ -99,7 +99,7 @@ namespace IndustrialFurnace
 
 				furnaces.Add(controller);
 			}
-		}
+		}*/
 	}
 
 

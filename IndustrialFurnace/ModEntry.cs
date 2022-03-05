@@ -8,9 +8,21 @@ using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
+using StardewValley.GameData;
 using StardewValley.Locations;
 using StardewValley.Menus;
 using SObject = StardewValley.Object;
+
+/*
+ TODO:
+-Mod Message tekstuureiden ja valon lähteiden synkronoimiseksi. Lähetä CustomFurnaceAction delegaatista.
+-Valon lähteiden luominen ja tuhoaminen. Mahdollisesti vastaavalla listalla kuin furnace2.
+-API:n korjaaminen, erityisesti furnace ID funktionaalisuus.
+-Uuni prosessoi tuotteet yön yli oli se päällä tai ei. Kokeile toimisko ProducedItem Condition, custom Game State Query.
+ Jos ei, niin harmonylla prefix Building.dayUpdate.
+ 
+ 
+ */
 
 
 namespace IndustrialFurnace
@@ -19,12 +31,12 @@ namespace IndustrialFurnace
 	public class ModEntry : Mod, IAssetEditor, IAssetLoader
 	{
 		private const int lightSourceIDMultiplier = 14097000;
-		private const string controllerDataSaveKey = "controller-save";
+		//private const string controllerDataSaveKey = "controller-save";
 		private const string furnaceBuildingType = "Industrial Furnace";
-		private const string saveDataRefreshedMessage = "Save data refreshed";
-		private const string requestSaveData = "Request save data";
+		//private const string saveDataRefreshedMessage = "Save data refreshed";
+		//private const string requestSaveData = "Request save data";
 
-		private readonly string blueprintsPath = PathUtilities.NormalizeAssetName("Data/Blueprints");
+		//private readonly string blueprintsPath = PathUtilities.NormalizeAssetName("Data/Blueprints");
 
 		// Texture strings
 		// I think only this one needs to be normalized since it points to an actual file path to make it work on linux
@@ -49,16 +61,16 @@ namespace IndustrialFurnace
 		private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
 		private readonly string fireAnimationDataPath = Path.Combine("assets", "FireAnimation.json");
 
-		private int furnacesBuilt = 0;      // Used to identify furnaces, placed in maxOccupants field.
+		//private int furnacesBuilt = 0;      // Used to identify furnaces, placed in maxOccupants field.
 		private ModConfig config;
-		private ModSaveData modSaveData;
-		private BlueprintData blueprintData;
+		//private ModSaveData modSaveData;
+		//private BlueprintData blueprintData;
 		private SmokeAnimationData smokeAnimationData;
 		private FireAnimationData fireAnimationData;
 		private SmeltingRulesContainer newSmeltingRules;
 		private ITranslationHelper i18n;
 
-		private int currentlyLookingAtFurnace = -1;
+		//private int currentlyLookingAtFurnace = -1;
 
 		//private Texture2D furnaceOn;
 		//private Texture2D furnaceOff;
@@ -66,9 +78,16 @@ namespace IndustrialFurnace
 		private bool customSmokeSpriteExists = false;
 		private bool customFireSpriteExists = false;
 
-		
 
-		private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
+
+		BuildingData buildingData = new();
+		private readonly List<Building> furnaces2 = new List<Building>();
+		private readonly string modDataKeyOn = "Traktori.IndustrialFurnace/FurnaceOn";
+
+
+
+
+		//private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
 		
 
 		/*********
@@ -103,7 +122,10 @@ namespace IndustrialFurnace
 			this.config = helper.ReadConfig<ModConfig>();
 
 			// TODO: Use the name specified in the blueprint?
-			blueprintData = helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath);
+			//blueprintData = helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath);
+			buildingData = helper.Data.ReadJsonFile<BuildingData>(blueprintDataPath);
+
+
 			//newSmeltingRules = helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
 			newSmeltingRules = Game1.content.Load<SmeltingRulesContainer>(smeltingRulesDataName);
 			CheckSmeltingRules();
@@ -113,17 +135,19 @@ namespace IndustrialFurnace
 			fireAnimationData = Game1.content.Load<FireAnimationData>(fireAnimationDataName);
 
 			helper.Events.Display.RenderedWorld += OnRenderedWorld;
-			helper.Events.Display.MenuChanged += OnMenuChanged;
 			helper.Events.GameLoop.UpdateTicking += OnUpdateTicking;
 			helper.Events.GameLoop.GameLaunched += OnGameLaunched;
 			helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
-			helper.Events.GameLoop.Saving += OnSaving;
+			//helper.Events.GameLoop.Saving += OnSaving;
 			helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
 			helper.Events.GameLoop.DayStarted += OnDayStarted;
 			helper.Events.Input.ButtonPressed += OnButtonPressed;
 			helper.Events.World.BuildingListChanged += OnBuildingListChanged;
-			helper.Events.Multiplayer.ModMessageReceived += OnModMessageReceived;
+			//helper.Events.Multiplayer.ModMessageReceived += OnModMessageReceived;
 			helper.Events.Player.Warped += OnWarped;
+
+			// Register the custom listener for furnace input
+			GameLocation.RegisterTileAction("Traktori.IndustrialFurnace_Input", (a, b, c, d) => CustomFurnaceAction(a, b, c, d));
 		}
 
 
@@ -137,25 +161,25 @@ namespace IndustrialFurnace
 		/// <param name="asset">Basic metadata about the asset being loaded.</param>
 		public bool CanLoad<T>(IAssetInfo asset)
 		{
-			if (asset.AssetNameEquals(assetOnName))
+			if (asset.Name.IsEquivalentTo(assetOnName))
 				return true;
 
-			else if (asset.AssetNameEquals(defaultAssetName))
+			else if (asset.Name.IsEquivalentTo(defaultAssetName))
 				return true;
 
-			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
+			else if (asset.Name.IsEquivalentTo(smokeAnimationSpriteName))
 				return true;
 
-			else if (asset.AssetNameEquals(fireAnimationSpriteName))
+			else if (asset.Name.IsEquivalentTo(fireAnimationSpriteName))
 				return true;
 
-			else if (asset.AssetNameEquals(smeltingRulesDataName))
+			else if (asset.Name.IsEquivalentTo(smeltingRulesDataName))
 				return true;
 
-			else if (asset.AssetNameEquals(smokeAnimationDataName))
+			else if (asset.Name.IsEquivalentTo(smokeAnimationDataName))
 				return true;
 
-			else if (asset.AssetNameEquals(fireAnimationDataName))
+			else if (asset.Name.IsEquivalentTo(fireAnimationDataName))
 				return true;
 
 			return false;
@@ -166,7 +190,7 @@ namespace IndustrialFurnace
 		/// <param name="asset">Basic metadata about the asset being loaded.</param>
 		public T Load<T>(IAssetInfo asset)
 		{
-			if (asset.AssetNameEquals(assetOnName))
+			if (asset.Name.IsEquivalentTo(assetOnName))
 			{
 				string seasonalTextureName = $"{Game1.currentSeason}_{onPngName}";
 
@@ -179,7 +203,7 @@ namespace IndustrialFurnace
 				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason} state On. Using the default.");
 				return Helper.Content.Load<T>(Path.Combine("assets", onPngName), ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(defaultAssetName))
+			else if (asset.Name.IsEquivalentTo(defaultAssetName))
 			{
 				string seasonalTextureName = $"{Game1.currentSeason}_{offPngName}";
 
@@ -192,28 +216,28 @@ namespace IndustrialFurnace
 				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason} state Off. Using the default.");
 				return Helper.Content.Load<T>(Path.Combine("assets", offPngName), ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
+			else if (asset.Name.IsEquivalentTo(smokeAnimationSpriteName))
 			{
 				return Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(fireAnimationSpriteName))
+			else if (asset.Name.IsEquivalentTo(fireAnimationSpriteName))
 			{
 				return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
 			}
-			else if (asset.AssetNameEquals(smeltingRulesDataName))
+			else if (asset.Name.IsEquivalentTo(smeltingRulesDataName))
 			{
 				return (T)(object)Helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
 			}
-			else if	(asset.AssetNameEquals(smokeAnimationDataName))
+			else if	(asset.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
 				return (T)(object)Helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
 			}
-			else if (asset.AssetNameEquals(fireAnimationDataName))
+			else if (asset.Name.IsEquivalentTo(fireAnimationDataName))
 			{
 				return (T)(object)Helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
 			}
 
-			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+			throw new InvalidOperationException($"Unexpected asset '{asset.Name}'.");
 		}
 
 
@@ -221,10 +245,12 @@ namespace IndustrialFurnace
 		/// <param name="asset">Basic metadata about the asset being edit.</param>
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
-			if (asset.AssetNameEquals(blueprintsPath))
+			/*if (asset.Name.IsEquivalentTo(blueprintsPath))
 			{
 				return true;
-			}
+			}*/
+			if (asset.Name.IsEquivalentTo("Data/BuildingsData"))
+				return true;
 
 			return false;
 		}
@@ -234,34 +260,127 @@ namespace IndustrialFurnace
 		/// <param name="asset">A helper which encapsulates metadata about an asset and enables changes to it.</param>
 		public void Edit<T>(IAssetData asset)
 		{
-			if (asset.AssetNameEquals(blueprintsPath))
+			/*if (asset.Name.IsEquivalentTo(blueprintsPath))
 			{
 				var editor = asset.AsDictionary<string, string>();
 				editor.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
 				return;
+			}*/
+			if (asset.Name.IsEquivalentTo("Data/BuildingsData"))
+			{
+				var dic = asset.AsDictionary<string, BuildingData>();
+				dic.Data[buildingData.ID] = buildingData;
+				return;
 			}
 
-			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+			throw new InvalidOperationException($"Unexpected asset '{asset.Name}'.");
 		}
 
 
 		/// <summary>Sends a message for all connected players the updated save data. TODO: Exclude the sender?</summary>
-		public void SendUpdateMessage()
+		/*public void SendUpdateMessage()
 		{
 			// Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
 			InitializeSaveData();
 			Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new[] { this.ModManifest.UniqueID });
-		}
+		}*/
 
 
 		/// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
 		public bool IsBuildingIndustrialFurnace(Building building)
 		{
-			return building.buildingType.Value.Equals(furnaceBuildingType);
+			return building.buildingData.ID.Equals("Traktori.IndustrialFurnace_IndustrialFurnace");
+			//return building.buildingType.Value.Equals(furnaceBuildingType);
 		}
 
 
-		public IndustrialFurnaceController GetController(int ID)
+		public bool CustomFurnaceAction(GameLocation location, string[] actionArguments, Farmer farmer, Point point)
+		{
+			if (!Context.IsPlayerFree)
+				return false;
+
+			Building building = location.getBuildingAt(point.ToVector2());
+
+			if (building is not null)
+			{
+				if (building.modData[modDataKeyOn].Equals("T"))
+				{
+					DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
+					return false;
+				}
+
+				if (building.daysOfConstructionLeft.Value > 0)
+				{
+					Monitor.Log("Trying to use furnace that hasn't been completed yet", LogLevel.Debug);
+					return false;
+				}
+
+				//string tileAction = building.buildingData.GetActionAtTile(point.X - building.tileX.Value, point.Y - building.tileY.Value);
+
+				//if (tileAction is not null && tileAction.Equals("Traktori.IndustrialFurnace_Input"))
+				//{
+				//Monitor.Log("Found the correct tile action!", LogLevel.Debug);
+
+				//Farmer player = Game1.player;
+				SObject heldItem = farmer.ActiveObject;
+
+				if (heldItem is null)
+					return false;
+
+				if (heldItem.QualifiedItemID.Equals(SObject.coalQID))
+				{
+					if (building.GetBuildingChest("Input").items.Count >= 0)
+					{
+						if (heldItem.Stack >= config.CoalAmount)
+						{
+							//Helper.Input.Suppress(e.Button);
+							farmer.removeItemsFromInventory(SObject.coalID, config.CoalAmount);
+							Game1.playSound("furnace");
+
+							//Monitor.Log($"{Game1.player.Name} started the furnace {furnace.ID} with {config.CoalAmount} {heldItem.Name}.");
+							Monitor.Log($"{Game1.player.Name} started the furnace with {config.CoalAmount} {heldItem.Name}.");
+
+							if (config.InstantSmelting)
+							{
+								Monitor.Log("And it finished immediately.");
+								//FinishSmelting(furnace);
+							}
+							else
+							{
+								building.modData[modDataKeyOn] = "T";
+								UpdateTexture(building, true);
+
+								/*furnace.ChangeCurrentlyOn(true);
+								UpdateTexture(furnace.furnace, true);
+
+								CreateLight(furnace);*/
+							}
+
+							return true;
+						}
+						else
+						{
+							DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+						}
+					}
+					else
+					{
+						DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+					}
+				}
+				else
+				{
+					// Try to drop the items
+					return building.PerformBuildingChestAction("Input", Game1.player);
+				}
+				//}
+			}
+
+			return false;
+		}
+
+
+		/*public IndustrialFurnaceController GetController(int ID)
 		{
 			int index = GetIndexOfFurnaceControllerWithTag(ID);
 
@@ -278,7 +397,7 @@ namespace IndustrialFurnace
 			}
 
 			return null;
-		}
+		}*/
 
 
 		/*********
@@ -290,134 +409,149 @@ namespace IndustrialFurnace
 			// This should be true if the player has another window focused or the game is still in the main menu
 			if (!Game1.game1.IsActive || Game1.getFarm() is null) return;
 
+			GameLocation location = Game1.player.currentLocation;
+
+			if (location is null)
+				return;
+
 			// Create a smoke sprite
 			if (smokeAnimationData.Enabled && e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
 			{
-				GameLocation location = Game1.player.currentLocation;
-
-				if (location != null && location.IsFarm && location.IsOutdoors)
-				{
-					for (int i = 0; i < furnaces.Count; i++)
-					{
-						if (!furnaces[i].CurrentlyOn) continue;
-
-						int x = furnaces[i].furnace.tileX.Value;
-						int y = furnaces[i].furnace.tileY.Value;
-
-						TemporaryAnimatedSprite sprite;
-
-						// See if we should do a custom sprite, or use the default
-						if (customSmokeSpriteExists)
-						{
-							sprite = new TemporaryAnimatedSprite(smokeAnimationSpriteName,
-								new Rectangle(0, 0, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY),
-								new Vector2(x * 64 + smokeAnimationData.SpawnXOffset, y * 64 + smokeAnimationData.SpawnYOffset),
-								false, 1f / 500f, Color.Gray)
-							{
-								alpha = 0.75f,
-								motion = new Vector2(0.0f, -0.5f),
-								acceleration = new Vector2(1f / 500f, 0.0f),
-								interval = 99999f,
-								layerDepth = 1f,
-								scale = smokeAnimationData.SmokeScale,
-								scaleChange = smokeAnimationData.SmokeScaleChange,
-								rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
-							};
-						}
-						else
-						{
-							sprite = new TemporaryAnimatedSprite(Path.Combine("LooseSprites", "Cursors"),
-								new Rectangle(372, 1956, 10, 10),
-								new Vector2(x * 64 + smokeAnimationData.SpawnXOffset, y * 64 + smokeAnimationData.SpawnYOffset),
-								false, 1f / 500f, Color.Gray)
-							{
-								alpha = 0.75f,
-								motion = new Vector2(0.0f, -0.5f),
-								acceleration = new Vector2(1f / 500f, 0.0f),
-								interval = 99999f,
-								layerDepth = 1f,
-								scale = smokeAnimationData.SmokeScale,
-								scaleChange = smokeAnimationData.SmokeScaleChange,
-								rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
-							};
-						}
-
-						// Add smoke sprite
-						location.temporarySprites.Add(sprite);
-					}
-				}
+				CreateSmokeSprite(location);
 			}
 			// Create a fire sprite
 			if (fireAnimationData.Enabled && e.IsMultipleOf(fireAnimationData.SpawnFrequency * 60 / 1000))
 			{
-				GameLocation location = Game1.player.currentLocation;
+				CreateFireSprite(location);
+			}
+		}
 
-				if (location != null && location.IsFarm && location.IsOutdoors)
+
+		private void CreateSmokeSprite(GameLocation playerLocation)
+		{
+			for (int i = 0; i < furnaces2.Count; i++)
+			{
+				if (furnaces2[i].modData[modDataKeyOn].Equals("F"))
+					continue;
+
+				if (!furnaces2[i].buildingLocation.Value.Equals(playerLocation))
+					continue;
+
+				int x = furnaces2[i].tileX.Value;
+				int y = furnaces2[i].tileY.Value;
+
+				TemporaryAnimatedSprite sprite;
+
+				// See if we should do a custom sprite, or use the default
+				if (customSmokeSpriteExists)
 				{
-					for (int i = 0; i < furnaces.Count; i++)
+					sprite = new TemporaryAnimatedSprite(smokeAnimationSpriteName,
+						new Rectangle(0, 0, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY),
+						new Vector2(x * 64 + smokeAnimationData.SpawnXOffset, y * 64 + smokeAnimationData.SpawnYOffset),
+						false, 1f / 500f, Color.Gray)
 					{
-						if (!furnaces[i].CurrentlyOn) continue;
-
-						int x = furnaces[i].furnace.tileX.Value;
-						int y = furnaces[i].furnace.tileY.Value;
-
-						TemporaryAnimatedSprite sprite;
-
-						if (customFireSpriteExists)
-						{
-							// Spark only randomly
-							if (Game1.random.NextDouble() >= fireAnimationData.SpawnChance) continue;
-
-							double randomX = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnXRandomOffset - fireAnimationData.SpawnXRandomOffset;
-							double randomY = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnYRandomOffset - fireAnimationData.SpawnYRandomOffset;
-
-							Vector2 pos = new Vector2(x * 64f + fireAnimationData.SpawnXOffset + (float)randomX,
-								y * 64f + fireAnimationData.SpawnYOffset + (float)randomY);
-
-							sprite = new TemporaryAnimatedSprite(fireAnimationSpriteName,
-								new Rectangle(0, 0, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY),
-								fireAnimationData.AnimationSpeed, fireAnimationData.AnimationLength, 10, pos, false,
-								false,
-								(float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0),
-								0.005f, Color.White, 1f, 0f, 0f, 0f)
-							{
-								light = true,
-								lightcolor = Color.Black
-							};
-
-							// Puff only randomlierly
-							if (Game1.random.NextDouble() < fireAnimationData.SoundEffectChance)
-								Game1.playSound("fireball");
-						}
-						else
-						{
-							// Spark only randomly
-							if (Game1.random.NextDouble() >= 0.2) continue;
-
-							double randomX = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnXRandomOffset - fireAnimationData.SpawnXRandomOffset;
-							double randomY = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnYRandomOffset - fireAnimationData.SpawnYRandomOffset;
-
-							Vector2 pos = new Vector2(x * 64f + fireAnimationData.SpawnXOffset + (float)randomX,
-								y * 64f + fireAnimationData.SpawnYOffset + (float)randomY);
-
-							sprite = new TemporaryAnimatedSprite(30, pos, Color.White, fireAnimationData.AnimationLength,
-								false, fireAnimationData.AnimationSpeed, 10, 64,
-								(float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0),
-								-1, 0)
-							{
-								alphaFade = 0.005f,
-								light = true,
-								lightcolor = Color.Black
-							};
-
-							// Puff only randomlierly
-							if (Game1.random.NextDouble() < fireAnimationData.SoundEffectChance) 
-								Game1.playSound("fireball");
-						}
-
-						location.temporarySprites.Add(sprite);
-					}
+						alpha = 0.75f,
+						motion = new Vector2(0.0f, -0.5f),
+						acceleration = new Vector2(1f / 500f, 0.0f),
+						interval = 99999f,
+						layerDepth = 1f,
+						scale = smokeAnimationData.SmokeScale,
+						scaleChange = smokeAnimationData.SmokeScaleChange,
+						rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
+					};
 				}
+				else
+				{
+					sprite = new TemporaryAnimatedSprite(Path.Combine("LooseSprites", "Cursors"),
+						new Rectangle(372, 1956, 10, 10),
+						new Vector2(x * 64 + smokeAnimationData.SpawnXOffset, y * 64 + smokeAnimationData.SpawnYOffset),
+						false, 1f / 500f, Color.Gray)
+					{
+						alpha = 0.75f,
+						motion = new Vector2(0.0f, -0.5f),
+						acceleration = new Vector2(1f / 500f, 0.0f),
+						interval = 99999f,
+						layerDepth = 1f,
+						scale = smokeAnimationData.SmokeScale,
+						scaleChange = smokeAnimationData.SmokeScaleChange,
+						rotationChange = (float)(Game1.random.Next(-5, 6) * 3.14159274101257 / 256.0)
+					};
+				}
+
+				// Add smoke sprite
+				playerLocation.temporarySprites.Add(sprite);
+			}
+		}
+
+
+		private void CreateFireSprite(GameLocation playerLocation)
+		{
+			for (int i = 0; i < furnaces2.Count; i++)
+			{
+				if (furnaces2[i].modData[modDataKeyOn].Equals("F"))
+					continue;
+
+				if (!furnaces2[i].buildingLocation.Value.Equals(playerLocation))
+					continue;
+
+				int x = furnaces2[i].tileX.Value;
+				int y = furnaces2[i].tileY.Value;
+
+				TemporaryAnimatedSprite sprite;
+
+				if (customFireSpriteExists)
+				{
+					// Spark only randomly
+					if (Game1.random.NextDouble() >= fireAnimationData.SpawnChance) continue;
+
+					double randomX = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnXRandomOffset - fireAnimationData.SpawnXRandomOffset;
+					double randomY = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnYRandomOffset - fireAnimationData.SpawnYRandomOffset;
+
+					Vector2 pos = new Vector2(x * 64f + fireAnimationData.SpawnXOffset + (float)randomX,
+						y * 64f + fireAnimationData.SpawnYOffset + (float)randomY);
+
+					sprite = new TemporaryAnimatedSprite(fireAnimationSpriteName,
+						new Rectangle(0, 0, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY),
+						fireAnimationData.AnimationSpeed, fireAnimationData.AnimationLength, 10, pos, false,
+						false,
+						(float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0),
+						0.005f, Color.White, 1f, 0f, 0f, 0f)
+					{
+						light = true,
+						lightcolor = Color.Black
+					};
+
+					// Puff only randomlierly
+					if (Game1.random.NextDouble() < fireAnimationData.SoundEffectChance)
+						Game1.playSound("fireball");
+				}
+				else
+				{
+					// Spark only randomly
+					if (Game1.random.NextDouble() >= 0.2) continue;
+
+					double randomX = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnXRandomOffset - fireAnimationData.SpawnXRandomOffset;
+					double randomY = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnYRandomOffset - fireAnimationData.SpawnYRandomOffset;
+
+					Vector2 pos = new Vector2(x * 64f + fireAnimationData.SpawnXOffset + (float)randomX,
+						y * 64f + fireAnimationData.SpawnYOffset + (float)randomY);
+
+					sprite = new TemporaryAnimatedSprite(30, pos, Color.White, fireAnimationData.AnimationLength,
+						false, fireAnimationData.AnimationSpeed, 10, 64,
+						(float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0),
+						-1, 0)
+					{
+						alphaFade = 0.005f,
+						light = true,
+						lightcolor = Color.Black
+					};
+
+					// Puff only randomlierly
+					if (Game1.random.NextDouble() < fireAnimationData.SoundEffectChance)
+						Game1.playSound("fireball");
+				}
+
+				playerLocation.temporarySprites.Add(sprite);
 			}
 		}
 
@@ -467,13 +601,13 @@ namespace IndustrialFurnace
 		private void OnReturnedToTitle(object sender, ReturnedToTitleEventArgs e)
 		{
 			// Reset stuff
-			modSaveData = null;
-			furnaces.Clear();
+			//modSaveData = null;
+			furnaces2.Clear();
 		}
 
 
 		/// <summary>Raised after a mod message is received over the network.</summary>
-		private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
+		/*private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
 		{
 			if (e.FromModID == ModManifest.UniqueID)
 			{
@@ -499,34 +633,146 @@ namespace IndustrialFurnace
 					Helper.Multiplayer.SendMessage<ModSaveData>(modSaveData, saveDataRefreshedMessage, new string[] { ModManifest.UniqueID }, new long[] { request.PlayerID });
 				}
 			}
-		}
+		}*/
 
 
 		/// <summary>Raised before/after the game writes data to save file.</summary>
-		private void OnSaving(object sender, SavingEventArgs e)
+		/*private void OnSaving(object sender, SavingEventArgs e)
 		{
 			if (Game1.player.IsMainPlayer)
 			{
 				InitializeSaveData();
 				this.Helper.Data.WriteSaveData(controllerDataSaveKey, modSaveData);
 			}
-		}
+		}*/
 
 
 		/// <summary>Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).</summary>
 		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
 		{
 			// Only the person hosting the world loads the furnace controllers' state from the save
-			if (Game1.player.IsMainPlayer)
+			/*if (Game1.player.IsMainPlayer)
 			{
 				InitializeFurnaceControllers(true);
-			}
+			}*/
+
+			InitializeFurnaceList();
 		}
+
+
+		
 
 
 		/// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
 		{
+			if (!Context.IsPlayerFree)
+				return;
+
+			if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight || e.Button.IsActionButton() || e.Button.IsUseToolButton())
+			{
+				Vector2 tile = e.Cursor.Tile;
+
+				Building building = Game1.currentLocation.getBuildingAt(e.Cursor.GrabTile);
+
+				if (building is not null)
+				{
+					if (building.modData.TryGetValue(modDataKeyOn, out string value))
+					{
+						Monitor.Log("Mod Data found with value: " + value, LogLevel.Debug);
+					}
+					else
+					{
+						Monitor.Log("No Mod Data found!", LogLevel.Debug);
+					}
+				}
+			}
+				/*if (!Context.IsPlayerFree)
+					return;
+
+				if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight || e.Button.IsActionButton() || e.Button.IsUseToolButton())
+				{
+					Vector2 tile = e.Cursor.Tile;
+
+					Building building = Game1.currentLocation.getBuildingAt(e.Cursor.GrabTile);
+
+					if (building is not null)
+					{
+						if (building.daysOfConstructionLeft.Value > 0)
+						{
+							Monitor.Log("Trying to use furnace that hasn't been completed yet");
+							return;
+						}
+
+						string tileAction = building.buildingData.GetActionAtTile((int)tile.X - building.tileX.Value, (int)tile.Y - building.tileY.Value);
+
+						if (tileAction is not null && tileAction.Equals("Traktori.IndustrialFurnace_Input"))
+						{
+							Monitor.Log("Found the correct tile action!", LogLevel.Debug);
+
+							Farmer player = Game1.player;
+							SObject heldItem = player.ActiveObject;
+
+							if (heldItem is null)
+								return;
+
+							if (heldItem.QualifiedItemID.Equals(SObject.coalQID))
+							{
+								if (building.GetBuildingChest("Input").items.Count >= 0)
+								{
+									if (heldItem.Stack >= config.CoalAmount)
+									{
+										Helper.Input.Suppress(e.Button);
+										player.removeItemsFromInventory(SObject.coalID, config.CoalAmount);
+										Game1.playSound("furnace");
+
+										//Monitor.Log($"{Game1.player.Name} started the furnace {furnace.ID} with {config.CoalAmount} {heldItem.Name}.");
+										Monitor.Log($"{Game1.player.Name} started the furnace with {config.CoalAmount} {heldItem.Name}.");
+
+										if (config.InstantSmelting)
+										{
+											Monitor.Log("And it finished immediately.");
+											//FinishSmelting(furnace);
+										}
+										else
+										{
+											building.modData[modDataKeyOn] = "T";
+											UpdateTexture(building, true);
+
+											/*furnace.ChangeCurrentlyOn(true);
+											UpdateTexture(furnace.furnace, true);
+
+											CreateLight(furnace);*/
+				/*}
+			}
+			else
+			{
+				DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+			}
+		}
+		else
+		{
+			DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+		}
+	}
+	else
+	{
+		// Try to drop the items
+		building.PerformBuildingChestAction("Input", Game1.player);
+	}
+}
+}
+}*/
+				/*else if (e.Button == SButton.F6)
+				{
+					//Game1.activeClickableMenu = new CarpenterMenu(false, Game1.player.currentLocation);
+					//Farmer player = Game1.player;
+					//player.currentLocation.buildStructure(new BluePrint("Traktori.IndustrialFurnace_IndustrialFurnace"), player.getTileLocation(), player, skipSafetyChecks: true);
+				}*/
+
+				return;
+
+			/*
 			// Ignore if player hasn't loaded in yet, or is stuck in a menu or cutscene
 			if (!Context.IsPlayerFree)
 				return;
@@ -576,7 +822,7 @@ namespace IndustrialFurnace
 						{
 							Game1.playSound("coin");
 
-							SendUpdateMessage();
+							//SendUpdateMessage();
 						}
 
 						Helper.Input.Suppress(e.Button);
@@ -588,14 +834,30 @@ namespace IndustrialFurnace
 						Helper.Input.Suppress(e.Button);
 					}
 				}
-			}
+			}*/
 		}
 
 
 		/// <summary>The event called when the day starts.</summary>
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
+			// Turn off all of the furnaces that finished during the night
 			if (Game1.player.IsMainPlayer)
+			{
+				foreach (var furnace in furnaces2)
+				{
+					if (furnace.modData.TryGetValue(modDataKeyOn, out string value))
+					{
+						if (value.Equals("T"))
+						{
+							furnace.modData[modDataKeyOn] = "F";
+							UpdateTexture(furnace, false);
+						}
+					}
+				}
+			}
+
+			/*if (Game1.player.IsMainPlayer)
 			{
 				// Finish smelting items
 				foreach (IndustrialFurnaceController furnace in furnaces)
@@ -606,20 +868,39 @@ namespace IndustrialFurnace
 					}
 				}
 
-				SendUpdateMessage();
-			}
-			else if (modSaveData is null)
+				//SendUpdateMessage();
+			}*/
+			/*else if (modSaveData is null)
 			{
 				Helper.Multiplayer.SendMessage<RequestSaveData>(new RequestSaveData(Game1.player.UniqueMultiplayerID), requestSaveData, new string[] { ModManifest.UniqueID });
-			}
+			}*/
 		}
 
 
 		/// <summary>Raised after buildings are added/removed in any location.</summary>
 		private void OnBuildingListChanged(object sender, BuildingListChangedEventArgs e)
 		{
+			foreach (var building in e.Added)
+			{
+				if (IsBuildingIndustrialFurnace(building))
+				{
+					building.modData[modDataKeyOn] = "F";
+					furnaces2.Add(building);
+				}
+			}
+			foreach (var building in e.Removed)
+			{
+				if (IsBuildingIndustrialFurnace(building))
+				{
+					if (!furnaces2.Remove(building))
+					{
+						Monitor.Log("Failed to remove the building from the internal list", LogLevel.Error);
+					}
+				}
+			}
+
 			// Add added furnaces to the controller list
-			foreach (Building building in e.Added)
+			/*foreach (Building building in e.Added)
 			{
 				if (IsBuildingIndustrialFurnace(building))
 				{
@@ -646,34 +927,23 @@ namespace IndustrialFurnace
 						furnaces.RemoveAt(index);
 					}
 				}
-			}
+			}*/
 		}
 
 
-		/// <summary>The event called after an active menu is opened or closed.</summary>
-		private void OnMenuChanged(object sender, MenuChangedEventArgs e)
+		private void InitializeFurnaceList()
 		{
-			// Add the blueprint
-			if (e.NewMenu is CarpenterMenu carpenterMenu)
+			furnaces2.Clear();
+
+			foreach (var location in Game1.locations)
 			{
-				bool isMagicalMenu = Helper.Reflection.GetField<bool>(carpenterMenu, "magicalConstruction").GetValue();
-
-				if (isMagicalMenu) return;
-
-				IList<BluePrint> blueprints = Helper.Reflection
-					.GetField<List<BluePrint>>(carpenterMenu, "blueprints")
-					.GetValue();
-
-				// Add furnace blueprint, and tag it uniquely based on how many have been built
-				blueprints.Add(new BluePrint(furnaceBuildingType)
+				foreach (var building in location.buildings)
 				{
-					maxOccupants = furnacesBuilt,
-				});
-			}
-			// If a menu was closed, reset the currently looked at furnace, just in case.
-			else if (Game1.activeClickableMenu is null)
-			{
-				currentlyLookingAtFurnace = -1;
+					if (IsBuildingIndustrialFurnace(building))
+					{
+						furnaces2.Add(building);
+					}
+				}
 			}
 		}
 
@@ -682,7 +952,8 @@ namespace IndustrialFurnace
 		/// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.</summary>
 		private void OnRenderedWorld(object sender, RenderedWorldEventArgs e)
 		{
-			
+			return;
+			/*the old way to render the output chest's bubble
 			foreach (IndustrialFurnaceController controller in furnaces)
 			{
 				// Assumes the furnace is built in the farm to avoid rendering the notification bubble anywhere else
@@ -714,22 +985,22 @@ namespace IndustrialFurnace
 					new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, controller.output.items[0].ParentSheetIndex, 16, 16)),
 					Color.White * 0.75f, 0.0f, new Vector2(8f, 8f), 4f, SpriteEffects.None,
 					(float)((building.tileY.Value + 1) * 64 / 10000.0 + 9.99999974737875E-06 + building.tileX.Value / 10000.0));
-			}
+			}*/
 		}
 
 
 		/// <summary>Raised after the current player moves to a new location.</summary>
 		private void OnWarped(object sender, WarpedEventArgs e)
 		{
-			if (e.IsLocalPlayer)
-				UpdateFurnaceLights();
+			/*if (e.IsLocalPlayer)
+				UpdateFurnaceLights();*/
 		}
 
 
 		/// <summary>Place items to the furnace</summary>
 		/// <param name="furnace">The furnace controller</param>
 		/// <returns>Whether the placement was successful or not</returns>
-		private bool PlaceItemsToTheFurnace(IndustrialFurnaceController furnace)
+		/*private bool PlaceItemsToTheFurnace(IndustrialFurnaceController furnace)
 		{
 			// Items can be placed only if the furnace is NOT on
 			if (furnace.CurrentlyOn)
@@ -762,7 +1033,7 @@ namespace IndustrialFurnace
 				{
 					// Remove multiples of the required input amount
 					int smeltAmount = amount / rule.InputItemAmount;
-					Game1.player.removeItemsFromInventory(objectId, smeltAmount * rule.InputItemAmount);
+					Game1.player.removeItemsFromInventory(objectId.ToString(), smeltAmount * rule.InputItemAmount);
 					furnace.AddItemsToSmelt(objectId, smeltAmount * rule.InputItemAmount);
 
 					Monitor.Log($"{Game1.player.Name} placed {smeltAmount * rule.InputItemAmount} {heldItem.Name} to the furnace {furnace.ID}.");
@@ -782,7 +1053,7 @@ namespace IndustrialFurnace
 				{
 					if (heldItem.Stack >= config.CoalAmount)
 					{
-						Game1.player.removeItemsFromInventory(objectId, config.CoalAmount);
+						Game1.player.removeItemsFromInventory(objectId.ToString(), config.CoalAmount);
 
 						Monitor.Log($"{Game1.player.Name} started the furnace {furnace.ID} with {config.CoalAmount} {heldItem.Name}.");
 
@@ -819,12 +1090,12 @@ namespace IndustrialFurnace
 				DisplayMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
 				return false;
 			}
-		}
+		}*/
 
 
 		/// <summary>Called when the player tries to interact with the output chest</summary>
 		/// <param name="furnace">The furnace controller that's being interacted with</param>
-		private void CollectItemsFromTheFurnace(IndustrialFurnaceController furnace)
+		/*private void CollectItemsFromTheFurnace(IndustrialFurnaceController furnace)
 		{
 			// Clear the output of removed items
 			furnace.output.clearNulls();
@@ -832,14 +1103,14 @@ namespace IndustrialFurnace
 			// Show output chest only if it contains something
 			if (furnace.output.items.Count == 0) return;
 
-			currentlyLookingAtFurnace = furnace.ID;
+			//currentlyLookingAtFurnace = furnace.ID;
 			DrawOutputMenu(furnace);
-		}
+		}*/
 
 
 		/// <summary>Processes the input chest's items and places the result to the output</summary>
 		/// <param name="furnace"></param>
-		private void FinishSmelting(IndustrialFurnaceController furnace)
+		/*private void FinishSmelting(IndustrialFurnaceController furnace)
 		{
 			// TODO: Add checks to prevent loss of items, since it is possible that 'output amount' > 'input amount'
 
@@ -897,13 +1168,13 @@ namespace IndustrialFurnace
 
 			// Update the texture of the furnace
 			UpdateTexture(furnace.furnace, false);
-		}
+		}*/
 
 
 		/// <summary>Returns the index of the matching controller in the furnaces list</summary>
 		/// <param name="tag">The tag of searched furnace controller</param>
 		/// <returns>Either the index or -1 if no tag matches are found</returns>
-		private int GetIndexOfFurnaceControllerWithTag(int tag)
+		/*private int GetIndexOfFurnaceControllerWithTag(int tag)
 		{
 			for (int i = 0; i < furnaces.Count; i++)
 			{
@@ -915,7 +1186,7 @@ namespace IndustrialFurnace
 			}
 
 			return -1;
-		}
+		}*/
 
 
 		/// <summary>Switches the building's texture between ON and OFF versions</summary>
@@ -935,27 +1206,27 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Updates the textures of all furnaces. Used to sync with multiplayer save data changes.</summary>
-		private void UpdateTextures()
+		/*private void UpdateTextures()
 		{
 			for (int i = 0; i < furnaces.Count; i++)
 			{
 				UpdateTexture(furnaces[i].furnace, furnaces[i].CurrentlyOn);
 			}
-		}
+		}*/
 
 
 		/// <summary>
 		/// Update the light sources for furnaces, but only of the player is on the farm map.
 		/// Assumes only farm can have built buildings!
 		/// </summary>
-		private void UpdateFurnaceLights()
+		/*private void UpdateFurnaceLights()
 		{
-			for (int i = 0; i < furnaces.Count; i++)
+			for (int i = 0; i < furnaces2.Count; i++)
 			{
-				if (furnaces[i].CurrentlyOn)
+				if (furnaces2[i].modData[modDataKeyOn].Equals("T"))
 				{
-					// Assumes only farm can have built buildings!
-					if (Game1.player.currentLocation != Game1.getFarm())
+					// Check if the player is in the same map
+					if (!Game1.player.currentLocation.Equals(furnaces2[i].buildingLocation))
 						continue;
 
 					if (furnaces[i].lightSource is null)
@@ -977,14 +1248,14 @@ namespace IndustrialFurnace
 					furnaces[i].lightSource = null;
 				}
 			}
-		}
+		}*/
 
 
 		/// <summary>
 		/// Create a new light source and link it to the furnace
 		/// </summary>
 		/// <param name="controller"></param>
-		private void CreateLight(IndustrialFurnaceController controller)
+		/*private void CreateLight(IndustrialFurnaceController controller)
 		{
 			Building building = controller.furnace;
 			Vector2 pos = new Vector2(building.tileX.Value * 64 + fireAnimationData.LightSourceXOffset, building.tileY.Value * 64 + fireAnimationData.LightSourceYOffset);
@@ -995,7 +1266,7 @@ namespace IndustrialFurnace
 			// Make the furnace light up the area
 			Game1.currentLightSources.Add(light);
 			controller.lightSource = light;
-		}
+		}*/
 
 
 		/// <summary>Displays a HUD message of defined type with a possible sound effect</summary>
@@ -1021,13 +1292,13 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Update the furnace data from the save data</summary>
-		private void InitializeFurnaceControllers(bool readSaveData)
+		/*private void InitializeFurnaceControllers(bool readSaveData)
 		{
 			// Initialize the lists to prevent data leaking from previous games
 			furnaces.Clear();
 
 			// Load the saved data. If not present, initialize new
-			if (readSaveData)
+			/*if (readSaveData)
 				modSaveData = Helper.Data.ReadSaveData<ModSaveData>(controllerDataSaveKey);
 
 			if (modSaveData is null)
@@ -1037,10 +1308,10 @@ namespace IndustrialFurnace
 			else
 			{
 				modSaveData.ParseModSaveDataToControllers(furnaces, this);
-			}
+			}*/
 
 			// Update furnacesBuilt counter to match the highest id of built furnaces (+1)
-			int highestId = -1;
+			/*int highestId = -1;
 			for (int i = 0; i < furnaces.Count; i++)
 			{
 				if (furnaces[i].ID > highestId) highestId = furnaces[i].ID;
@@ -1061,10 +1332,10 @@ namespace IndustrialFurnace
 					}
 				}
 			}
-		}
+		}*/
 
 
-		private void DrawOutputMenu(IndustrialFurnaceController furnace)
+		/*private void DrawOutputMenu(IndustrialFurnaceController furnace)
 		{
 			// Display the menu for the output chest
 			Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(
@@ -1084,15 +1355,15 @@ namespace IndustrialFurnace
 				null,
 				-1,
 				null);
-		}
+		}*/
 
 
 		/// <summary>Update the save data to match the controllers data</summary>
-		private void InitializeSaveData()
+		/*private void InitializeSaveData()
 		{
 			modSaveData.ClearOldData();
 			modSaveData.ParseControllersToModSaveData(furnaces);
-		}
+		}*/
 
 
 		/// <summary>Get the texture name, checks for seasonal textures</summary>

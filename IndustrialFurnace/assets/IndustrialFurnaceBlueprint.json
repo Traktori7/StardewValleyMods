@@ -1,33 +1,210 @@
 {
-	"Name": "Industrial Furnace",
-	"BlueprintType": "Buildings",
-	"NameOfBuildingToUpgrade": "none",
-	"MaxOccupants": "-1",
-	"Width": "4",
-	"Height": "2",
-	"HumanDoorX": "-1",
-	"HumanDoorY": "-1",
-	"AnimalDoorX": "-2",
-	"AnimalDoorY": "-1",
-	"MapToWarpTo": "null",
-	"SourceRectForMenuViewX": "64",
-	"SourceRectForMenuViewY": "48",
-	"ActionBehaviour": "null",
-	"NamesOfBuildingLocations": "Farm",
-	"Magical": "false",
-	"DaysToBuild": "1",
-	"MoneyRequired": "10000",
-	"ItemsRequired":
-	[
-		{
-			"ItemName":	"Iron Bar",
-			"ItemID": 335,
-			"ItemAmount": 10
-		},
-		{
-			"ItemName":	"Iridium Bar",
-			"ItemID": 337,
-			"ItemAmount": 1
-		}
-	]
+  //"Traktori.IndustrialFurnace_IndustrialFurnace": {
+    "ID": "Traktori.IndustrialFurnace_IndustrialFurnace",
+    "Name": "Industrial Furnace",
+    "Description": "Smelts lots of stuff",
+    "Texture": "Buildings/Industrial Furnace",
+    "DrawShadow": true,
+    //"UpgradeSignTile": "1, 1",
+    //"UpgradeSignHeight": 24.0,
+    "Size": {
+      "X": 4,
+      "Y": 2
+    },
+    "FadeWhenBehind": true,
+    "SourceRect": "0 0 64 48",
+    "UpgradeOffset": {
+      "X": 0,
+      "Y": 0
+    },
+    "SeasonOffset": {
+      "X": 0,
+      "Y": 0
+    },
+    "DrawOffset": "0, 0",
+    "SortTileOffset": 0.0,
+    "Builder": "Carpenter",
+    "BuildDays": 1,
+    "BuildCost": 10000,
+    "BuildMaterials": [
+      {
+        "ItemID": "(O)335",
+        "Amount": 10
+      },
+      {
+        "ItemID": "(O)337",
+        "Amount": 1
+      }
+    ],
+    /*"ValidBuildLocations": [
+      "Farm"
+    ],*/
+    "ModData": {},
+    "Chests": [
+      {
+        "Name": "Input",
+        "Type": 2,
+        "Sound": "Ship",
+        "InvalidItemMessage": "You can't smelt this'",
+        "InvalidCountMessage": "You need atleast 4 to smelt",
+        "ChestFullMessage": "[LocalizedText Strings\\\\Buildings:MillFull]",
+        "DisplayTile": "-1, -1",
+        "DisplayHeight": 0.0
+      },
+      {
+        "Name": "Output",
+        "Type": 1,
+        "Sound": null,
+        "InvalidItemMessage": null,
+        "InvalidCountMessage": null,
+        "ChestFullMessage": null,
+        "DisplayTile": "3, 1",
+        "DisplayHeight": 1.5
+      }
+    ],
+    "ActionTiles": [
+      {
+        "Tile": {
+          "X": 1,
+          "Y": 1
+        },
+        "Action": "Traktori.IndustrialFurnace_Input"
+      },
+      {
+        "Tile": {
+          "X": 3,
+          "Y": 1
+        },
+        "Action": "BuildingChest Output"
+      }
+    ],
+  "ItemConversions": [
+    {
+      "RequiredTags": [
+        "id_o_378"
+      ],
+      "RequiredCount": 4,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)334",
+          "MinCount": 1,
+          "MaxCount": 1,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    },
+    {
+      "RequiredTags": [
+        "id_o_380"
+      ],
+      "RequiredCount": 4,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)335",
+          "MinCount": 1,
+          "MaxCount": 1,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    },
+    {
+      "RequiredTags": [
+        "id_o_384"
+      ],
+      "RequiredCount": 4,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)336",
+          "MinCount": 1,
+          "MaxCount": 1,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    },
+    {
+      "RequiredTags": [
+        "id_o_386"
+      ],
+      "RequiredCount": 4,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)337",
+          "MinCount": 1,
+          "MaxCount": 1,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    },
+    {
+      "RequiredTags": [
+        "id_o_909"
+      ],
+      "RequiredCount": 4,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)910",
+          "MinCount": 1,
+          "MaxCount": 1,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    },
+    {
+      "RequiredTags": [
+        "id_o_80"
+      ],
+      "RequiredCount": 2,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)338",
+          "MinCount": 3,
+          "MaxCount": 3,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    },
+    {
+      "RequiredTags": [
+        "id_o_82"
+      ],
+      "RequiredCount": 1,
+      "MaxDailyConversions": -1,
+      "SourceChest": "Input",
+      "DestinationChest": "Output",
+      "ProducedItems": [
+        {
+          "ItemID": "(O)338",
+          "MinCount": 4,
+          "MaxCount": 4,
+          "Chance": 1.0,
+          "Condition": null
+        }
+      ]
+    }
+  ]
+  //}
 }

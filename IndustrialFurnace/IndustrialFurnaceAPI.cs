@@ -32,7 +32,8 @@ namespace IndustrialFurnace
 		/// <summary>Returns the controller that matches the provided ID.</summary>
 		public IndustrialFurnaceController GetController(int ID)
 		{
-			return mod.GetController(ID);
+			//return mod.GetController(ID);
+			return null;
 		}
 	}
 }

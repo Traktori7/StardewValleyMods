@@ -116,7 +116,7 @@ namespace IndustrialFurnace
 				output.clearNulls();
 			}
 
-			mod.SendUpdateMessage();
+			//mod.SendUpdateMessage();
 		}
 	}
 }
