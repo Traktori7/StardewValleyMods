@@ -36,7 +36,7 @@ namespace QualityScrubber
 				return false;
 			}
 
-			if (!(inputItem is SObject inputObject))
+			if (inputItem is not SObject inputObject)
 			{
 				//Monitor.Log("You can't scrub this!", LogLevel.Debug);
 				return false;

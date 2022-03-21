@@ -47,7 +47,7 @@ namespace ShowBirthdays
 		/// </summary>
 		public bool CanLoad<T>(IAssetInfo asset)
 		{
-			return asset.AssetNameEquals(assetName);
+			return asset.Name.IsEquivalentTo(assetName);
 		}
 
 
@@ -137,6 +137,7 @@ namespace ShowBirthdays
 
 		/// <summary>
 		/// Edits the calendar's hover texts to include extra birthdays.
+		/// TODO: 1.6 supports festival + birthday + wedding hover text. Change this to shove only the birthdays to the hover text.
 		/// </summary>
 		private void OnMenuChanged(object sender, MenuChangedEventArgs e)
 		{
@@ -485,6 +486,10 @@ namespace ShowBirthdays
 			}
 
 
+			/// <summary>
+			/// TODO: Muuta käyttämään 1.6:n Custom NPC Data: SocializeConditions game state query
+			/// Selvitä aikooko Esca ajaa exclusionin sen kautta vai pysyykö omanaan
+			/// </summary>
 			internal void RecheckBirthdays()
 			{
 				// Reset the birthday lists

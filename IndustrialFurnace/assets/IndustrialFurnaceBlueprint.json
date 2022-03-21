@@ -93,7 +93,7 @@
           "MinCount": 1,
           "MaxCount": 1,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     },
@@ -111,7 +111,7 @@
           "MinCount": 1,
           "MaxCount": 1,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     },
@@ -129,7 +129,7 @@
           "MinCount": 1,
           "MaxCount": 1,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     },
@@ -147,7 +147,7 @@
           "MinCount": 1,
           "MaxCount": 1,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     },
@@ -165,7 +165,7 @@
           "MinCount": 1,
           "MaxCount": 1,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     },
@@ -183,7 +183,7 @@
           "MinCount": 3,
           "MaxCount": 3,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     },
@@ -201,7 +201,7 @@
           "MinCount": 4,
           "MaxCount": 4,
           "Chance": 1.0,
-          "Condition": null
+          "Condition": "Traktori.IndustrialFurnace_IsFurnaceOnQuery"
         }
       ]
     }

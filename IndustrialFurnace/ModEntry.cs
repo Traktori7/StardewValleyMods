@@ -18,8 +18,12 @@ using SObject = StardewValley.Object;
 -Mod Message tekstuureiden ja valon lähteiden synkronoimiseksi. Lähetä CustomFurnaceAction delegaatista.
 -Valon lähteiden luominen ja tuhoaminen. Mahdollisesti vastaavalla listalla kuin furnace2.
 -API:n korjaaminen, erityisesti furnace ID funktionaalisuus.
+ *Osittain korjattu. Mod Data key on jo olemassa, mutta sitä ei määritetä koskaan.
+
+Ongelma: GSQ ei erota uuneja toisistaan
 -Uuni prosessoi tuotteet yön yli oli se päällä tai ei. Kokeile toimisko ProducedItem Condition, custom Game State Query.
  Jos ei, niin harmonylla prefix Building.dayUpdate.
+-Kuinka saada uunin ID GSQ:n läpi?
  
  
  */
@@ -82,7 +86,9 @@ namespace IndustrialFurnace
 
 		BuildingData buildingData = new();
 		private readonly List<Building> furnaces2 = new List<Building>();
-		private readonly string modDataKeyOn = "Traktori.IndustrialFurnace/FurnaceOn";
+		private readonly string modDataKeyOn = "Traktori.IndustrialFurnace_FurnaceOn";
+		private readonly string modDataKeyFurnaceID = "Traktori.IndustrialFurnace_FurnaceID";
+		private readonly string furnaceStateQuery = "Traktori.IndustrialFurnace_IsFurnaceOnQuery";
 
 
 
@@ -148,6 +154,7 @@ namespace IndustrialFurnace
 
 			// Register the custom listener for furnace input
 			GameLocation.RegisterTileAction("Traktori.IndustrialFurnace_Input", (a, b, c, d) => CustomFurnaceAction(a, b, c, d));
+			GameStateQuery.RegisterQueryType(furnaceStateQuery, (string[] arguments) => CustomFurnaceStateQuery(arguments));
 		}
 
 
@@ -294,6 +301,12 @@ namespace IndustrialFurnace
 		}
 
 
+		public bool IsFurnaceOn(Building furnace)
+		{
+			return furnace.modData[modDataKeyOn].Equals("T");
+		}
+
+
 		public bool CustomFurnaceAction(GameLocation location, string[] actionArguments, Farmer farmer, Point point)
 		{
 			if (!Context.IsPlayerFree)
@@ -303,7 +316,7 @@ namespace IndustrialFurnace
 
 			if (building is not null)
 			{
-				if (building.modData[modDataKeyOn].Equals("T"))
+				if (IsFurnaceOn(building))
 				{
 					DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
 					return false;
@@ -380,6 +393,17 @@ namespace IndustrialFurnace
 		}
 
 
+		public bool CustomFurnaceStateQuery(string[] arguments)
+		{
+			//Building furnace = GetFurnaceFromID(arguments[0]);
+			Building furnace = furnaces2[0];
+
+			if (furnace is null)
+				return false;
+
+			return IsFurnaceOn(furnace);
+		}
+
 		/*public IndustrialFurnaceController GetController(int ID)
 		{
 			int index = GetIndexOfFurnaceControllerWithTag(ID);
@@ -431,7 +455,7 @@ namespace IndustrialFurnace
 		{
 			for (int i = 0; i < furnaces2.Count; i++)
 			{
-				if (furnaces2[i].modData[modDataKeyOn].Equals("F"))
+				if (!IsFurnaceOn(furnaces2[i]))
 					continue;
 
 				if (!furnaces2[i].buildingLocation.Value.Equals(playerLocation))
@@ -488,7 +512,7 @@ namespace IndustrialFurnace
 		{
 			for (int i = 0; i < furnaces2.Count; i++)
 			{
-				if (furnaces2[i].modData[modDataKeyOn].Equals("F"))
+				if (!IsFurnaceOn(furnaces2[i]))
 					continue;
 
 				if (!furnaces2[i].buildingLocation.Value.Equals(playerLocation))
@@ -945,6 +969,17 @@ namespace IndustrialFurnace
 					}
 				}
 			}
+		}
+
+		private Building GetFurnaceFromID(string id)
+		{
+			for (int i = 0; i < furnaces2.Count; i++)
+			{
+				if (furnaces2[i].modData[modDataKeyFurnaceID].Equals(id))
+					return furnaces2[i];
+			}
+
+			return null;
 		}
 
 
