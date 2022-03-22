@@ -28,25 +28,25 @@ namespace CategoriesInRecipes
 				prefix: new HarmonyMethod(typeof(RecipePatches), nameof(RecipePatches.GetSpriteIndexFromRawIndex_Prefix))
 			);
 		}
-    }
+	}
 
 	public class RecipePatches
-    {
+	{
 		private static IMonitor Monitor;
 		private static ITranslationHelper Translator;
 
 		public static void Initialize(IMonitor monitor, ITranslationHelper translation)
-        {
+		{
 			Monitor = monitor;
 			Translator = translation;
-        }
+		}
 
 		public static bool GetNameFromIndex_Prefix(ref int index, ref string __result)
-        {
-            try
-            {
-                switch (index)
-                {
+		{
+			try
+			{
+				switch (index)
+				{
 					case -75:
 						index = -3;
 						return true;
@@ -56,20 +56,20 @@ namespace CategoriesInRecipes
 					case -81:
 						index = -1;
 						return true;
-                    default:
+					default:
 						return true;
-                }
-            }
-            catch (Exception e)
-            {
+				}
+			}
+			catch (Exception e)
+			{
 				Monitor.Log("Mod failed at patching CraftingRecipe.getNameFromIndex", LogLevel.Error);
 				Monitor.Log(e.ToString(), LogLevel.Error);
 				return true;
-            }
-        }
+			}
+		}
 
 		public static bool GetSpriteIndexFromRawIndex_Prefix(ref int index, ref int __result)
-        {
+		{
 			try
 			{
 				switch (index)
@@ -95,5 +95,5 @@ namespace CategoriesInRecipes
 				return true;
 			}
 		}
-    }
+	}
 }
