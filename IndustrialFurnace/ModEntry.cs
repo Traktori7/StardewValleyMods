@@ -66,7 +66,7 @@ namespace IndustrialFurnace
 		private bool customSmokeSpriteExists = false;
 		private bool customFireSpriteExists = false;
 
-		
+		private bool modInstantBuildingFound = false;
 
 		private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
 		
@@ -99,6 +99,8 @@ namespace IndustrialFurnace
 			{
 				Monitor.Log("Custom sprite for the fire was not found. Using the default.");
 			}
+
+			modInstantBuildingFound = helper.ModRegistry.IsLoaded("BitwiseJonMods.InstantBuildings");
 
 			this.config = helper.ReadConfig<ModConfig>();
 
@@ -670,6 +672,34 @@ namespace IndustrialFurnace
 					maxOccupants = furnacesBuilt,
 				});
 			}
+			else if (modInstantBuildingFound && e.NewMenu is not null)
+            {
+				// Try to add the furnace to Instant Buildings' menu
+                try
+                {
+					Type instantBuildMenuType = Type.GetType("BitwiseJonMods.InstantBuildMenu, BitwiseJonMods.InstantBuildings");
+
+					if (e.NewMenu.GetType().Equals(instantBuildMenuType))
+                    {
+						List<BluePrint> blueprints = Helper.Reflection.GetField<List<BluePrint>>(e.NewMenu, "blueprints").GetValue();
+
+						// Add furnace blueprint, and tag it uniquely based on how many have been built
+						blueprints.Add(new BluePrint(furnaceBuildingType)
+						{
+							maxOccupants = furnacesBuilt,
+						});
+
+						// Refresh the blueprints to make building instant and maybe free depending on the mod's config
+						Helper.Reflection.GetMethod(e.NewMenu, "ModifyBlueprints").Invoke();
+					}
+				}
+                catch (Exception ex)
+                {
+					Monitor.Log("Failed editing Instant Building's menu", LogLevel.Error);
+					Monitor.Log(ex.ToString(), LogLevel.Error);
+                }
+				
+            }
 			// If a menu was closed, reset the currently looked at furnace, just in case.
 			else if (Game1.activeClickableMenu is null)
 			{
