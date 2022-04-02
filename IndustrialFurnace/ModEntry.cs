@@ -726,7 +726,7 @@ namespace IndustrialFurnace
 
 				// Check if there is items to render
 				if (controller.output.items.Count <= 0 || controller.output.items[0] == null)
-					return;
+					continue;
 
 				Building building = controller.furnace;
 
