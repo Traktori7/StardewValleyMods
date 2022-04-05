@@ -49,7 +49,6 @@ namespace IndustrialFurnace
 		private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
 		private readonly string fireAnimationDataPath = Path.Combine("assets", "FireAnimation.json");
 
-		private int furnacesBuilt = 0;      // Used to identify furnaces, placed in maxOccupants field.
 		private ModConfig config;
 		private ModSaveData modSaveData;
 		private BlueprintData blueprintData;
@@ -57,8 +56,6 @@ namespace IndustrialFurnace
 		private FireAnimationData fireAnimationData;
 		private SmeltingRulesContainer newSmeltingRules;
 		private ITranslationHelper i18n;
-
-		private int currentlyLookingAtFurnace = -1;
 
 		//private Texture2D furnaceOn;
 		//private Texture2D furnaceOff;
@@ -68,7 +65,10 @@ namespace IndustrialFurnace
 
 		private bool modInstantBuildingFound = false;
 
-		private readonly List<IndustrialFurnaceController> furnaces = new List<IndustrialFurnaceController>();
+		//Per-screen data
+		private readonly PerScreen<int> furnacesBuilt = new PerScreen<int>( () => 0) ;      // Used to identify furnaces, placed in maxOccupants field.
+		private readonly PerScreen<int> currentlyLookingAtFurnace = new PerScreen<int>( () => -1 );
+		private readonly PerScreen<List<IndustrialFurnaceController>> furnaces = new PerScreen<List<IndustrialFurnaceController>>( () => new List<IndustrialFurnaceController>() );
 		
 
 		/*********
@@ -271,7 +271,7 @@ namespace IndustrialFurnace
 			{
 				try
 				{
-					return furnaces[index];
+					return GetPerScreenFurnaceController(index);
 				}
 				catch (Exception)
 				{
@@ -299,12 +299,14 @@ namespace IndustrialFurnace
 
 				if (location != null && location.IsFarm && location.IsOutdoors)
 				{
-					for (int i = 0; i < furnaces.Count; i++)
+					for (int i = 0; i < furnaces.Value.Count; i++)
 					{
-						if (!furnaces[i].CurrentlyOn) continue;
+						IndustrialFurnaceController controller = GetPerScreenFurnaceController(i);
 
-						int x = furnaces[i].furnace.tileX.Value;
-						int y = furnaces[i].furnace.tileY.Value;
+						if (!controller.CurrentlyOn) continue;
+
+						int x = controller.furnace.tileX.Value;
+						int y = controller.furnace.tileY.Value;
 
 						TemporaryAnimatedSprite sprite;
 
@@ -356,12 +358,14 @@ namespace IndustrialFurnace
 
 				if (location != null && location.IsFarm && location.IsOutdoors)
 				{
-					for (int i = 0; i < furnaces.Count; i++)
+					for (int i = 0; i < furnaces.Value.Count; i++)
 					{
-						if (!furnaces[i].CurrentlyOn) continue;
+						IndustrialFurnaceController controller = GetPerScreenFurnaceController(i);
 
-						int x = furnaces[i].furnace.tileX.Value;
-						int y = furnaces[i].furnace.tileY.Value;
+						if (!controller.CurrentlyOn) continue;
+
+						int x = controller.furnace.tileX.Value;
+						int y = controller.furnace.tileY.Value;
 
 						TemporaryAnimatedSprite sprite;
 
@@ -470,7 +474,7 @@ namespace IndustrialFurnace
 		{
 			// Reset stuff
 			modSaveData = null;
-			furnaces.Clear();
+			furnaces.Value.Clear();
 		}
 
 
@@ -487,9 +491,9 @@ namespace IndustrialFurnace
 					InitializeFurnaceControllers(false);
 
 					// If we have a menu open and we're looking at a furnace, the menu is most likely the output menu. Redraw it!
-					if (Game1.activeClickableMenu != null && currentlyLookingAtFurnace != -1)
+					if (Game1.activeClickableMenu != null && currentlyLookingAtFurnace.Value != -1)
 					{
-						DrawOutputMenu(furnaces[GetIndexOfFurnaceControllerWithTag(currentlyLookingAtFurnace)]);
+						DrawOutputMenu(GetPerScreenFurnaceController(GetIndexOfFurnaceControllerWithTag(currentlyLookingAtFurnace.Value)));
 					}
 
 					UpdateTextures();
@@ -534,7 +538,7 @@ namespace IndustrialFurnace
 				return;
 
 			// Don't check if there are no furnaces
-			if (furnaces.Count == 0)
+			if (furnaces.Value.Count == 0)
 				return;
 			
 			// This might fix the android issue, also lets the player place items with both clicks
@@ -544,7 +548,7 @@ namespace IndustrialFurnace
 				if (!Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
 					return;
 
-				foreach (IndustrialFurnaceController furnace in furnaces)
+				foreach (IndustrialFurnaceController furnace in furnaces.Value)
 				{
 					Vector2 tile;
 					Building building = furnace.furnace;
@@ -600,7 +604,7 @@ namespace IndustrialFurnace
 			if (Game1.player.IsMainPlayer)
 			{
 				// Finish smelting items
-				foreach (IndustrialFurnaceController furnace in furnaces)
+				foreach (IndustrialFurnaceController furnace in furnaces.Value)
 				{
 					if (furnace.CurrentlyOn)
 					{
@@ -626,13 +630,13 @@ namespace IndustrialFurnace
 				if (IsBuildingIndustrialFurnace(building))
 				{
 					// Add the controller that takes care of the functionality of the furnace
-					IndustrialFurnaceController controller = new IndustrialFurnaceController(furnacesBuilt, false, this)
+					IndustrialFurnaceController controller = new IndustrialFurnaceController(furnacesBuilt.Value, false, this)
 					{
 						furnace = building
 					};
 
-					furnaces.Add(controller);
-					furnacesBuilt++;
+					furnaces.Value.Add(controller);
+					furnacesBuilt.Value++;
 				}
 			}
 
@@ -645,7 +649,7 @@ namespace IndustrialFurnace
 
 					if (index > -1)
 					{
-						furnaces.RemoveAt(index);
+						furnaces.Value.RemoveAt(index);
 					}
 				}
 			}
@@ -669,7 +673,7 @@ namespace IndustrialFurnace
 				// Add furnace blueprint, and tag it uniquely based on how many have been built
 				blueprints.Add(new BluePrint(furnaceBuildingType)
 				{
-					maxOccupants = furnacesBuilt,
+					maxOccupants = furnacesBuilt.Value,
 				});
 			}
 			else if (modInstantBuildingFound && e.NewMenu is not null)
@@ -686,7 +690,7 @@ namespace IndustrialFurnace
 						// Add furnace blueprint, and tag it uniquely based on how many have been built
 						blueprints.Add(new BluePrint(furnaceBuildingType)
 						{
-							maxOccupants = furnacesBuilt,
+							maxOccupants = furnacesBuilt.Value,
 						});
 
 						// Refresh the blueprints to make building instant and maybe free depending on the mod's config
@@ -703,7 +707,7 @@ namespace IndustrialFurnace
 			// If a menu was closed, reset the currently looked at furnace, just in case.
 			else if (Game1.activeClickableMenu is null)
 			{
-				currentlyLookingAtFurnace = -1;
+				currentlyLookingAtFurnace.Value = -1;
 			}
 		}
 
@@ -713,7 +717,7 @@ namespace IndustrialFurnace
 		private void OnRenderedWorld(object sender, RenderedWorldEventArgs e)
 		{
 			
-			foreach (IndustrialFurnaceController controller in furnaces)
+			foreach (IndustrialFurnaceController controller in furnaces.Value)
 			{
 				// Assumes the furnace is built in the farm to avoid rendering the notification bubble anywhere else
 				if (!Game1.player.currentLocation.IsFarm || !Game1.player.currentLocation.IsOutdoors) continue;
@@ -862,7 +866,7 @@ namespace IndustrialFurnace
 			// Show output chest only if it contains something
 			if (furnace.output.items.Count == 0) return;
 
-			currentlyLookingAtFurnace = furnace.ID;
+			currentlyLookingAtFurnace.Value = furnace.ID;
 			DrawOutputMenu(furnace);
 		}
 
@@ -935,10 +939,10 @@ namespace IndustrialFurnace
 		/// <returns>Either the index or -1 if no tag matches are found</returns>
 		private int GetIndexOfFurnaceControllerWithTag(int tag)
 		{
-			for (int i = 0; i < furnaces.Count; i++)
+			for (int i = 0; i < furnaces.Value.Count; i++)
 			{
 				// Assumes the furnace has been added to the list once
-				if (furnaces[i].ID == tag)
+				if (GetPerScreenFurnaceController(i).ID == tag)
 				{
 					return i;
 				}
@@ -967,9 +971,9 @@ namespace IndustrialFurnace
 		/// <summary>Updates the textures of all furnaces. Used to sync with multiplayer save data changes.</summary>
 		private void UpdateTextures()
 		{
-			for (int i = 0; i < furnaces.Count; i++)
+			for (int i = 0; i < furnaces.Value.Count; i++)
 			{
-				UpdateTexture(furnaces[i].furnace, furnaces[i].CurrentlyOn);
+				UpdateTexture(GetPerScreenFurnaceController(i).furnace, GetPerScreenFurnaceController(i).CurrentlyOn);
 			}
 		}
 
@@ -980,31 +984,33 @@ namespace IndustrialFurnace
 		/// </summary>
 		private void UpdateFurnaceLights()
 		{
-			for (int i = 0; i < furnaces.Count; i++)
+			for (int i = 0; i < furnaces.Value.Count; i++)
 			{
-				if (furnaces[i].CurrentlyOn)
+				IndustrialFurnaceController controller = GetPerScreenFurnaceController(i);
+
+				if (controller.CurrentlyOn)
 				{
 					// Assumes only farm can have built buildings!
 					if (Game1.player.currentLocation != Game1.getFarm())
 						continue;
 
-					if (furnaces[i].lightSource is null)
+					if (controller.lightSource is null)
 					{
-						CreateLight(furnaces[i]);
+						CreateLight(controller);
 					}
-					else if (!Game1.currentLightSources.Contains(furnaces[i].lightSource))
+					else if (!Game1.currentLightSources.Contains(controller.lightSource))
 					{
-						Game1.currentLightSources.Add(furnaces[i].lightSource);
+						Game1.currentLightSources.Add(controller.lightSource);
 					}
 				}
-				else if (furnaces[i].lightSource != null)
+				else if (controller.lightSource != null)
 				{
-					if (Game1.currentLightSources.Contains(furnaces[i].lightSource))
+					if (Game1.currentLightSources.Contains(controller.lightSource))
 					{
-						Game1.currentLightSources.Remove(furnaces[i].lightSource);
+						Game1.currentLightSources.Remove(controller.lightSource);
 					}
 
-					furnaces[i].lightSource = null;
+					controller.lightSource = null;
 				}
 			}
 		}
@@ -1054,7 +1060,7 @@ namespace IndustrialFurnace
 		private void InitializeFurnaceControllers(bool readSaveData)
 		{
 			// Initialize the lists to prevent data leaking from previous games
-			furnaces.Clear();
+			furnaces.Value.Clear();
 
 			// Load the saved data. If not present, initialize new
 			if (readSaveData)
@@ -1066,31 +1072,47 @@ namespace IndustrialFurnace
 			}
 			else
 			{
-				modSaveData.ParseModSaveDataToControllers(furnaces, this);
+				modSaveData.ParseModSaveDataToControllers(furnaces.Value, this);
 			}
 
 			// Update furnacesBuilt counter to match the highest id of built furnaces (+1)
 			int highestId = -1;
-			for (int i = 0; i < furnaces.Count; i++)
+			for (int i = 0; i < furnaces.Value.Count; i++)
 			{
-				if (furnaces[i].ID > highestId) highestId = furnaces[i].ID;
+				if (GetPerScreenFurnaceController(i).ID > highestId) highestId = GetPerScreenFurnaceController(i).ID;
 			}
-			furnacesBuilt = highestId + 1;
+			furnacesBuilt.Value = highestId + 1;
 
 			// Repopulate the list of furnaces, only checks the farm!
 			foreach (Building building in ((BuildableGameLocation)Game1.getFarm()).buildings)
 			{
 				if (IsBuildingIndustrialFurnace(building))
 				{
-					for (int i = 0; i < furnaces.Count; i++)
+					for (int i = 0; i < furnaces.Value.Count; i++)
 					{
-						if (building.maxOccupants.Value == furnaces[i].ID)
+						if (building.maxOccupants.Value == GetPerScreenFurnaceController(i).ID)
 						{
-							furnaces[i].furnace = building;
+							GetPerScreenFurnaceController(i).furnace = building;
 						}
 					}
 				}
 			}
+
+            // Clean controllers with null buildings from the save file
+			// Caused by playing (atleast) splitscreen multiplayer with versions older than 1.7.4
+			if (readSaveData)
+            {
+				int removed = furnaces.Value.RemoveAll(item => item.furnace is null);
+
+				if (removed > 0)
+                {
+					Monitor.Log("Removed " + removed + " corrupted furnace controllers from the save file.", LogLevel.Warn);
+
+					// Refresh the modSaveData
+					modSaveData.ParseControllersToModSaveData(furnaces.Value);
+				}
+			}
+
 		}
 
 
@@ -1121,8 +1143,13 @@ namespace IndustrialFurnace
 		private void InitializeSaveData()
 		{
 			modSaveData.ClearOldData();
-			modSaveData.ParseControllersToModSaveData(furnaces);
+			modSaveData.ParseControllersToModSaveData(furnaces.Value);
 		}
+
+		private IndustrialFurnaceController GetPerScreenFurnaceController(int index)
+        {
+			return furnaces.Value[index];
+        }
 
 
 		/// <summary>Get the texture name, checks for seasonal textures</summary>
