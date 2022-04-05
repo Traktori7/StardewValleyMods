@@ -545,13 +545,25 @@ namespace IndustrialFurnace
 			if (e.Button.IsActionButton() || e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
 			{
 				// Assumes furnaces can be built only on the farm and checks if player is on the farm map
-				if (!Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
-					return;
+				if (Game1.currentLocation is null || !Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
+                    return;
 
 				foreach (IndustrialFurnaceController furnace in furnaces.Value)
 				{
+					if (furnace is null)
+                    {
+						Monitor.Log("Furnace controller was null for some reason in OnButtonPressed");
+						continue;
+                    }
+
 					Vector2 tile;
 					Building building = furnace.furnace;
+
+					if (building is null)
+                    {
+						Monitor.Log("Furnace controller's building was null for some reason in OnButtonPressed");
+						continue;
+                    }
 
 					if (building.daysOfConstructionLeft.Value > 0)
 					{
