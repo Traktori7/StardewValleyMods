@@ -1124,7 +1124,6 @@ namespace IndustrialFurnace
 					modSaveData.ParseControllersToModSaveData(furnaces.Value);
 				}
 			}
-
 		}
 
 
