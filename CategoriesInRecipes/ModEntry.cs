@@ -1,5 +1,6 @@
 ﻿using System;
 using StardewModdingAPI;
+using SObject = StardewValley.Object;
 using HarmonyLib;
 
 namespace CategoriesInRecipes
@@ -48,18 +49,18 @@ namespace CategoriesInRecipes
 		public static bool GetNameFromIndex_Prefix(ref int index, ref string __result)
 		{
 			//Monitor.Log("Get Name accessed with index " + index, LogLevel.Debug);
-
+			
 			try
 			{
 				switch (index)
 				{
-					case -75:
+					case SObject.VegetableCategory:
 						index = -3;
 						return true;
-					case -79:
+					case SObject.FruitsCategory:
 						__result = Translator.Get("category.fruit");
 						return false;
-					case -81:
+					case SObject.GreensCategory:
 						index = -1;
 						return true;
 					default:
@@ -82,14 +83,14 @@ namespace CategoriesInRecipes
 			{
 				switch (index)
 				{
-					case -75:
+					case SObject.VegetableCategory:
 						index = -3;
 						return true;
-					case -79:
+					case SObject.FruitsCategory:
 						// Use Apple's parent sheet index
 						__result = 613;
 						return false;
-					case -81:
+					case SObject.GreensCategory:
 						index = -1;
 						return true;
 					default:
