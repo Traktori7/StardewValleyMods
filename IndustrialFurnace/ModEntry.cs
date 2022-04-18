@@ -119,7 +119,7 @@ namespace IndustrialFurnace
 
 
 		private void CheckFilesAndModInstalls()
-        {
+		{
 			// Check if there exists a custom sprite for the smoke
 			if (File.Exists(Path.Combine(Helper.DirectoryPath, smokeAnimationSpritePath)))
 			{

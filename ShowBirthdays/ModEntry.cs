@@ -48,9 +48,9 @@ namespace ShowBirthdays
 		private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
 		{
 			if (e.Name.IsEquivalentTo(assetName))
-            {
+			{
 				e.LoadFromModFile<Texture2D>(iconPath, AssetLoadPriority.Low);
-            }
+			}
 		}
 
 
