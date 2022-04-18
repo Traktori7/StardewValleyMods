@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -11,7 +12,7 @@ using StardewValley.Menus;
 
 namespace ShowBirthdays
 {
-	class ModEntry : Mod, IAssetLoader
+	class ModEntry : Mod
 	{
 		private CycleType cycleType;
 		// Flag for if the calendar is open
@@ -28,11 +29,12 @@ namespace ShowBirthdays
 
 		private Texture2D iconTexture;
 		private readonly string assetName = PathUtilities.NormalizeAssetName("Traktori.ShowBirthdays/Icon");
-		private readonly string iconPath = "assets/Icon.png";
+		private readonly string iconPath = Path.Combine("assets", "Icon.png");
 
 
 		public override void Entry(IModHelper helper)
 		{
+			helper.Events.Content.AssetRequested += OnAssetRequested;
 			helper.Events.Display.MenuChanged += OnMenuChanged;
 			helper.Events.Display.RenderingActiveMenu += OnRenderingActiveMenu;
 			helper.Events.Display.RenderedActiveMenu += OnRenderedActiveMenu;
@@ -42,21 +44,12 @@ namespace ShowBirthdays
 		}
 
 
-		/// <summary>
-		/// Get whether this instance can load the initial version of the given asset.
-		/// </summary>
-		public bool CanLoad<T>(IAssetInfo asset)
+		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
 		{
-			return asset.AssetNameEquals(assetName);
-		}
-
-
-		/// <summary>
-		/// Load a matched asset.
-		/// </summary>
-		public T Load<T>(IAssetInfo asset)
-		{
-			return Helper.Content.Load<T>(iconPath, ContentSource.ModFolder);
+			if (e.Name.IsEquivalentTo(assetName))
+            {
+				e.LoadFromModFile<Texture2D>(iconPath, AssetLoadPriority.Low);
+            }
 		}
 
 
@@ -117,7 +110,7 @@ namespace ShowBirthdays
 		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
 		{
 			// Initialize the helper
-			bdHelper = new BirthdayHelper(Monitor, Helper.ModRegistry);
+			bdHelper = new BirthdayHelper(Monitor, Helper.ModRegistry, Helper.GameContent);
 			// Refresh the config
 			config = Helper.ReadConfig<ModConfig>();
 
@@ -125,7 +118,7 @@ namespace ShowBirthdays
 			ChangeCycleType(config.cycleType);
 
 			// Load the icon from the mod folder
-			iconTexture = Game1.content.Load<Texture2D>(assetName);
+			iconTexture = Helper.GameContent.Load<Texture2D>(assetName);
 
 			// Check if the loading succeeded
 			if (iconTexture == null)
@@ -468,13 +461,15 @@ namespace ShowBirthdays
 		{
 			// Reference to the monitor to allow error logging
 			private readonly IMonitor monitor;
+			private readonly IGameContentHelper contentHelper;
 			private readonly IModRegistry modRegistry;
 			public List<Birthday>[] birthdays = new List<Birthday>[4];
 
 
-			public BirthdayHelper(IMonitor m, IModRegistry mr)
+			public BirthdayHelper(IMonitor m, IModRegistry mr, IGameContentHelper helper)
 			{
 				monitor = m;
+				contentHelper = helper;
 				modRegistry = mr;
 
 				// Initialize the array of lists
@@ -505,7 +500,7 @@ namespace ShowBirthdays
 
 						try
 						{
-							exclusionRules = Game1.content.Load<Dictionary<string, string>>("Data/CustomNPCExclusions");
+							exclusionRules = contentHelper.Load<Dictionary<string, string>>("Data/CustomNPCExclusions");
 							exclusionRulesFound = true;
 						}
 						catch (Exception e)
@@ -593,7 +588,7 @@ namespace ShowBirthdays
 				if (day == null)
 				{
 					// Add the birthday
-					Birthday newDay = new Birthday(monitor, birthday);
+					Birthday newDay = new Birthday(monitor, birthday, contentHelper);
 					newDay.AddNPC(n);
 					list.Add(newDay);
 				}
@@ -702,10 +697,12 @@ namespace ShowBirthdays
 			private int currentSpriteIndex = 0;
 			// Reference to the outer class to allow error logging
 			private readonly IMonitor monitor;
+			private readonly IGameContentHelper contentHelper;
 
-			public Birthday(IMonitor m, int day)
+			public Birthday(IMonitor m, int day, IGameContentHelper h)
 			{
 				monitor = m;
+				contentHelper = h;
 				this.day = day;
 			}
 
@@ -761,7 +758,7 @@ namespace ShowBirthdays
 				// How the base game handles getting the sprite
 				try
 				{
-					texture = Game1.content.Load<Texture2D>("Characters\\" + n.getTextureName());
+					texture = contentHelper.Load<Texture2D>("Characters\\" + n.getTextureName());
 				}
 				catch (Exception)
 				{

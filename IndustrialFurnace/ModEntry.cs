@@ -16,7 +16,7 @@ using SObject = StardewValley.Object;
 namespace IndustrialFurnace
 {
 	/// <summary>The mod entry point.</summary>
-	public class ModEntry : Mod, IAssetEditor, IAssetLoader
+	public class ModEntry : Mod
 	{
 		private const int lightSourceIDMultiplier = 14097000;
 		private const string controllerDataSaveKey = "controller-save";
@@ -80,40 +80,11 @@ namespace IndustrialFurnace
 		{
 			i18n = helper.Translation;
 
-			// Check if there exists a custom sprite for the smoke
-			if (File.Exists(Path.Combine(helper.DirectoryPath, smokeAnimationSpritePath)))
-			{
-				customSmokeSpriteExists = true;
-			}
-			else
-			{
-				Monitor.Log("Custom sprite for the smoke was not found. Using the default.");
-			}
-
-			// Check if there exists a custom sprite for the fire
-			if (File.Exists(Path.Combine(helper.DirectoryPath, fireAnimationSpritePath)))
-			{
-				customFireSpriteExists = true;
-			}
-			else
-			{
-				Monitor.Log("Custom sprite for the fire was not found. Using the default.");
-			}
-
-			modInstantBuildingFound = helper.ModRegistry.IsLoaded("BitwiseJonMods.InstantBuildings");
+			CheckFilesAndModInstalls();
 
 			this.config = helper.ReadConfig<ModConfig>();
 
-			// TODO: Use the name specified in the blueprint?
-			blueprintData = helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath);
-			//newSmeltingRules = helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
-			newSmeltingRules = Game1.content.Load<SmeltingRulesContainer>(smeltingRulesDataName);
-			CheckSmeltingRules();
-			//smokeAnimationData = helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
-			smokeAnimationData = Game1.content.Load<SmokeAnimationData>(smokeAnimationDataName);
-			//fireAnimationData = helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
-			fireAnimationData = Game1.content.Load<FireAnimationData>(fireAnimationDataName);
-
+			helper.Events.Content.AssetRequested += OnAssetRequested;
 			helper.Events.Display.RenderedWorld += OnRenderedWorld;
 			helper.Events.Display.MenuChanged += OnMenuChanged;
 			helper.Events.GameLoop.UpdateTicking += OnUpdateTicking;
@@ -126,124 +97,113 @@ namespace IndustrialFurnace
 			helper.Events.World.BuildingListChanged += OnBuildingListChanged;
 			helper.Events.Multiplayer.ModMessageReceived += OnModMessageReceived;
 			helper.Events.Player.Warped += OnWarped;
+
+
+			// TODO: Use the name specified in the blueprint?
+			blueprintData = helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath);
+
+			//newSmeltingRules = helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
+			//newSmeltingRules = Game1.content.Load<SmeltingRulesContainer>(smeltingRulesDataName);
+			newSmeltingRules = helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
+
+			CheckSmeltingRules();
+
+			//smokeAnimationData = helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
+			//smokeAnimationData = Game1.content.Load<SmokeAnimationData>(smokeAnimationDataName);
+			smokeAnimationData = helper.GameContent.Load<SmokeAnimationData>(smokeAnimationDataName);
+
+			//fireAnimationData = helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
+			//fireAnimationData = Game1.content.Load<FireAnimationData>(fireAnimationDataName);
+			fireAnimationData = helper.GameContent.Load<FireAnimationData>(fireAnimationDataName);
 		}
 
 
-		public override object GetApi()
-		{
-			return new IndustrialFurnaceAPI(this);
+		private void CheckFilesAndModInstalls()
+        {
+			// Check if there exists a custom sprite for the smoke
+			if (File.Exists(Path.Combine(Helper.DirectoryPath, smokeAnimationSpritePath)))
+			{
+				customSmokeSpriteExists = true;
+			}
+			else
+			{
+				Monitor.Log("Custom sprite for the smoke was not found. Using the default.");
+			}
+
+			// Check if there exists a custom sprite for the fire
+			if (File.Exists(Path.Combine(Helper.DirectoryPath, fireAnimationSpritePath)))
+			{
+				customFireSpriteExists = true;
+			}
+			else
+			{
+				Monitor.Log("Custom sprite for the fire was not found. Using the default.");
+			}
+
+			modInstantBuildingFound = Helper.ModRegistry.IsLoaded("BitwiseJonMods.InstantBuildings");
 		}
 
-
-		/// <summary>Get whether this instance can load the initial version of the given asset.</summary>
-		/// <param name="asset">Basic metadata about the asset being loaded.</param>
-		public bool CanLoad<T>(IAssetInfo asset)
+		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
 		{
-			if (asset.AssetNameEquals(assetOnName))
-				return true;
-
-			else if (asset.AssetNameEquals(defaultAssetName))
-				return true;
-
-			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
-				return true;
-
-			else if (asset.AssetNameEquals(fireAnimationSpriteName))
-				return true;
-
-			else if (asset.AssetNameEquals(smeltingRulesDataName))
-				return true;
-
-			else if (asset.AssetNameEquals(smokeAnimationDataName))
-				return true;
-
-			else if (asset.AssetNameEquals(fireAnimationDataName))
-				return true;
-
-			return false;
-		}
-
-
-		/// <summary>Load a matched asset.</summary>
-		/// <param name="asset">Basic metadata about the asset being loaded.</param>
-		public T Load<T>(IAssetInfo asset)
-		{
-			if (asset.AssetNameEquals(assetOnName))
+			if (e.Name.IsEquivalentTo(assetOnName))
 			{
 				string seasonalTextureName = $"{Game1.currentSeason}_{onPngName}";
 
 				if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", seasonalTextureName)))
 				{
 					Monitor.Log($"Using the texture for {Game1.currentSeason}.");
-					return Helper.Content.Load<T>(Path.Combine("assets", seasonalTextureName), ContentSource.ModFolder);
+					e.LoadFromModFile<Texture2D>(Path.Combine("assets", seasonalTextureName), AssetLoadPriority.Low);
 				}
 
 				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason} state On. Using the default.");
-				return Helper.Content.Load<T>(Path.Combine("assets", onPngName), ContentSource.ModFolder);
+				e.LoadFromModFile<Texture2D>(Path.Combine("assets", onPngName), AssetLoadPriority.Low);
 			}
-			else if (asset.AssetNameEquals(defaultAssetName))
+			else if (e.Name.IsEquivalentTo(defaultAssetName))
 			{
 				string seasonalTextureName = $"{Game1.currentSeason}_{offPngName}";
 
 				if (File.Exists(Path.Combine(Helper.DirectoryPath, "assets", seasonalTextureName)))
 				{
 					Monitor.Log($"Using the texture for {Game1.currentSeason}.");
-					return Helper.Content.Load<T>(Path.Combine("assets", seasonalTextureName), ContentSource.ModFolder);
+					e.LoadFromModFile<Texture2D>(Path.Combine("assets", seasonalTextureName), AssetLoadPriority.Low);
 				}
 
 				Monitor.Log($"Seasonal texture not found for season {Game1.currentSeason} state Off. Using the default.");
-				return Helper.Content.Load<T>(Path.Combine("assets", offPngName), ContentSource.ModFolder);
+				e.LoadFromModFile<Texture2D>(Path.Combine("assets", offPngName), AssetLoadPriority.Low);
 			}
-			else if (asset.AssetNameEquals(smokeAnimationSpriteName))
+			else if (e.Name.IsEquivalentTo(smokeAnimationSpriteName))
 			{
-				return Helper.Content.Load<T>(smokeAnimationSpritePath, ContentSource.ModFolder);
+				e.LoadFromModFile<Texture2D>(smokeAnimationSpritePath, AssetLoadPriority.Low);
 			}
-			else if (asset.AssetNameEquals(fireAnimationSpriteName))
+			else if (e.Name.IsEquivalentTo(fireAnimationSpriteName))
 			{
-				return Helper.Content.Load<T>(fireAnimationSpritePath, ContentSource.ModFolder);
+				e.LoadFromModFile<Texture2D>(fireAnimationSpritePath, AssetLoadPriority.Low);
 			}
-			else if (asset.AssetNameEquals(smeltingRulesDataName))
+			else if (e.Name.IsEquivalentTo(smeltingRulesDataName))
 			{
-				return (T)(object)Helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
+				e.LoadFrom(() => Helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath), AssetLoadPriority.Low);
 			}
-			else if	(asset.AssetNameEquals(smokeAnimationDataName))
+			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
-				return (T)(object)Helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
+				e.LoadFrom(() => Helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath), AssetLoadPriority.Low);
 			}
-			else if (asset.AssetNameEquals(fireAnimationDataName))
+			else if (e.Name.IsEquivalentTo(fireAnimationDataName))
 			{
-				return (T)(object)Helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
+				e.LoadFrom(() => Helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath), AssetLoadPriority.Low);
 			}
-
-			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+			else if (e.NameWithoutLocale.IsEquivalentTo(blueprintsPath))
+			{
+				e.Edit(asset =>
+				{
+					var dictionary = asset.AsDictionary<string, string>();
+					dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
+				});
+			}
 		}
 
-
-		/// <summary>Get whether this instance can edit the given asset.</summary>
-		/// <param name="asset">Basic metadata about the asset being edit.</param>
-		public bool CanEdit<T>(IAssetInfo asset)
+		public override object GetApi()
 		{
-			if (asset.AssetNameEquals(blueprintsPath))
-			{
-				return true;
-			}
-
-			return false;
-		}
-
-
-		/// <summary>Edit a matched asset.</summary>
-		/// <param name="asset">A helper which encapsulates metadata about an asset and enables changes to it.</param>
-		public void Edit<T>(IAssetData asset)
-		{
-			if (asset.AssetNameEquals(blueprintsPath))
-			{
-				var editor = asset.AsDictionary<string, string>();
-				editor.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
-				return;
-			}
-
-			throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+			return new IndustrialFurnaceAPI(this);
 		}
 
 
@@ -546,24 +506,24 @@ namespace IndustrialFurnace
 			{
 				// Assumes furnaces can be built only on the farm and checks if player is on the farm map
 				if (Game1.currentLocation is null || !Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
-                    return;
+					return;
 
 				foreach (IndustrialFurnaceController furnace in furnaces.Value)
 				{
 					if (furnace is null)
-                    {
+					{
 						Monitor.Log("Furnace controller was null for some reason in OnButtonPressed");
 						continue;
-                    }
+					}
 
 					Vector2 tile;
 					Building building = furnace.furnace;
 
 					if (building is null)
-                    {
+					{
 						Monitor.Log("Furnace controller's building was null for some reason in OnButtonPressed");
 						continue;
-                    }
+					}
 
 					if (building.daysOfConstructionLeft.Value > 0)
 					{
@@ -689,14 +649,14 @@ namespace IndustrialFurnace
 				});
 			}
 			else if (modInstantBuildingFound && e.NewMenu is not null)
-            {
+			{
 				// Try to add the furnace to Instant Buildings' menu
-                try
-                {
+				try
+				{
 					Type instantBuildMenuType = Type.GetType("BitwiseJonMods.InstantBuildMenu, BitwiseJonMods.InstantBuildings");
 
 					if (e.NewMenu.GetType().Equals(instantBuildMenuType))
-                    {
+					{
 						List<BluePrint> blueprints = Helper.Reflection.GetField<List<BluePrint>>(e.NewMenu, "blueprints").GetValue();
 
 						// Add furnace blueprint, and tag it uniquely based on how many have been built
@@ -709,13 +669,13 @@ namespace IndustrialFurnace
 						Helper.Reflection.GetMethod(e.NewMenu, "ModifyBlueprints").Invoke();
 					}
 				}
-                catch (Exception ex)
-                {
+				catch (Exception ex)
+				{
 					Monitor.Log("Failed editing Instant Building's menu", LogLevel.Error);
 					Monitor.Log(ex.ToString(), LogLevel.Error);
-                }
+				}
 				
-            }
+			}
 			// If a menu was closed, reset the currently looked at furnace, just in case.
 			else if (Game1.activeClickableMenu is null)
 			{
@@ -971,11 +931,11 @@ namespace IndustrialFurnace
 		{
 			if (currentlyOn)
 			{
-				building.texture = new Lazy<Texture2D>(() => Game1.content.Load<Texture2D>(assetOnName));
+				building.texture = new Lazy<Texture2D>(() => Helper.GameContent.Load<Texture2D>(assetOnName));
 			}
 			else
 			{
-				building.texture = new Lazy<Texture2D>(() => Game1.content.Load<Texture2D>(defaultAssetName));
+				building.texture = new Lazy<Texture2D>(() => Helper.GameContent.Load<Texture2D>(defaultAssetName));
 			}
 		}
 
@@ -1110,14 +1070,14 @@ namespace IndustrialFurnace
 				}
 			}
 
-            // Clean controllers with null buildings from the save file
+			// Clean controllers with null buildings from the save file
 			// Caused by playing (atleast) splitscreen multiplayer with versions older than 1.7.4
 			if (readSaveData)
-            {
+			{
 				int removed = furnaces.Value.RemoveAll(item => item.furnace is null);
 
 				if (removed > 0)
-                {
+				{
 					Monitor.Log("Removed " + removed + " corrupted furnace controllers from the save file.", LogLevel.Warn);
 
 					// Refresh the modSaveData
@@ -1158,9 +1118,9 @@ namespace IndustrialFurnace
 		}
 
 		private IndustrialFurnaceController GetPerScreenFurnaceController(int index)
-        {
+		{
 			return furnaces.Value[index];
-        }
+		}
 
 
 		/// <summary>Get the texture name, checks for seasonal textures</summary>
