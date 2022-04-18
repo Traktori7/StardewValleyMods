@@ -3,8 +3,8 @@
 <PropertyGroup>
 	<AssemblyName>ShowBirthdays</AssemblyName>
 	<RootNamespace>ShowBirthdays</RootNamespace>
-	<Version>1.0.0</Version>
 	<TargetFramework>net5.0</TargetFramework>
+	<Nullable>enable</Nullable>
 </PropertyGroup>
 
 <ItemGroup>
@@ -12,5 +12,4 @@
 	<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.0.0" />
 </ItemGroup>
 
-<ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 </Project>

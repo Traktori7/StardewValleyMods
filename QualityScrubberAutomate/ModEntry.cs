@@ -14,8 +14,8 @@ namespace QualityScrubberAutomate
 	{
 		private const string automateUniqueID = "Pathoschild.Automate";
 		private const string qualityScrubberUniqueID = "Traktori.QualityScrubber";
-		private IAutomateAPI automateApi;
-		private IQualityScrubberApi qualityScrubberApi;
+		private IAutomateAPI? automateApi;
+		private IQualityScrubberApi? qualityScrubberApi;
 
 
 		/*********
@@ -32,7 +32,7 @@ namespace QualityScrubberAutomate
 		/*********
 		** Private methods
 		*********/
-		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
+		private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
 		{
 			automateApi = Helper.ModRegistry.GetApi<IAutomateAPI>(automateUniqueID);
 			
