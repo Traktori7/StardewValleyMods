@@ -4,6 +4,10 @@ using StardewValley;
 using SObject = StardewValley.Object;
 
 
+/// <summary>
+/// TODO: Machine animation doesn't need PFM in 1.6
+/// </summary>
+
 namespace QualityScrubber
 {
 	/// <summary>The mod entry point.</summary>

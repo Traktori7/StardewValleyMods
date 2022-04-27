@@ -512,6 +512,7 @@ namespace ShowBirthdays
 				}
 
 				// Loop through all of the NPCs, filter out characters that don't have a proper birthday
+				// TODO: Switch to HarmonyPatch_BirthdayCalendar.IncludeBirthday in custom npc exclusions instead of straight from the exclusions rules?
 				foreach (NPC n in Utility.getAllCharacters())
 				{
 					// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
