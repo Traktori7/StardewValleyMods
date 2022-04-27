@@ -2,7 +2,6 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
@@ -185,7 +184,15 @@ namespace ShowBirthdays
 
 						NPC n = listOfNPCs[j];
 						// Build the hover text just like in the base game. I'm not touching that.
-						newHoverText += (n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName);
+						// Old line before getting rid of Linq:
+						// newHoverText += (n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName);
+
+						char last = n.displayName[n.displayName.Length - 1];
+
+						newHoverText +=
+							(last == 's'
+							|| (LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.de && (last == 'x' || last == 'ß' || last == 'z')))
+							? Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName);
 					}
 				}
 				else
