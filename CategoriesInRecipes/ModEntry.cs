@@ -19,14 +19,16 @@ namespace CategoriesInRecipes
 			var harmony = new Harmony(this.ModManifest.UniqueID);
 
 			harmony.Patch(
-				original: AccessTools.Method(typeof(StardewValley.CraftingRecipe), nameof(StardewValley.CraftingRecipe.getNameFromIndex)),
+				original: AccessTools.Method(typeof(StardewValley.CraftingRecipe), nameof(StardewValley.CraftingRecipe.getNameFromIndex))
+					?? throw new InvalidOperationException("Can't find CraftingRecipe.getNameFromIndex to patch"),
 				prefix: new HarmonyMethod(typeof(RecipePatches), nameof(RecipePatches.GetNameFromIndex_Prefix))
 			);
 
 			Monitor.Log("Harmony patched a prefix for CraftingRecipe.getNameFromIndex");
 
 			harmony.Patch(
-				original: AccessTools.Method(typeof(StardewValley.CraftingRecipe), nameof(StardewValley.CraftingRecipe.getSpriteIndexFromRawIndex)),
+				original: AccessTools.Method(typeof(StardewValley.CraftingRecipe), nameof(StardewValley.CraftingRecipe.getSpriteIndexFromRawIndex))
+					?? throw new InvalidOperationException("Can't find CraftingRecipe.getSpriteIndexFromRawIndex to patch"),
 				prefix: new HarmonyMethod(typeof(RecipePatches), nameof(RecipePatches.GetSpriteIndexFromRawIndex_Prefix))
 			);
 
@@ -49,8 +51,6 @@ namespace CategoriesInRecipes
 
 		public static bool GetNameFromIndex_Prefix(ref int index, ref string __result)
 		{
-			//Monitor.Log("Get Name accessed with index " + index, LogLevel.Debug);
-			
 			try
 			{
 				switch (index)
@@ -70,7 +70,7 @@ namespace CategoriesInRecipes
 			}
 			catch (Exception e)
 			{
-				Monitor!.Log("Mod failed at patching CraftingRecipe.getNameFromIndex", LogLevel.Error);
+				Monitor!.Log("Mod failed at prefixing CraftingRecipe.getNameFromIndex", LogLevel.Error);
 				Monitor.Log(e.ToString(), LogLevel.Error);
 				return true;
 			}
@@ -79,8 +79,6 @@ namespace CategoriesInRecipes
 
 		public static bool GetSpriteIndexFromRawIndex_Prefix(ref int index, ref int __result)
 		{
-			//Monitor.Log("Get Sprite Index accessed with index " + index, LogLevel.Debug);
-
 			try
 			{
 				switch (index)
@@ -101,7 +99,7 @@ namespace CategoriesInRecipes
 			}
 			catch (Exception e)
 			{
-				Monitor!.Log("Mod failed at patching CraftingRecipe.getSpriteIndexFromRawIndex", LogLevel.Error);
+				Monitor!.Log("Mod failed at prefixing CraftingRecipe.getSpriteIndexFromRawIndex", LogLevel.Error);
 				Monitor.Log(e.ToString(), LogLevel.Error);
 				return true;
 			}
