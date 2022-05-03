@@ -545,8 +545,10 @@ namespace ShowBirthdays
 
 								for (int i = 0; i < rules.Length; i++)
 								{
-									// Check if it contains 'All' or 'Calendar'
-									if (rules[i].Equals("All", StringComparison.OrdinalIgnoreCase) || rules[i].Equals("Calendar", StringComparison.OrdinalIgnoreCase))
+									// Check if it contains 'All', 'Calendar' or 'TownEvent'
+									if (rules[i].Equals("All", StringComparison.OrdinalIgnoreCase)
+										|| rules[i].Equals("Calendar", StringComparison.OrdinalIgnoreCase)
+										|| rules[i].Equals("TownEvent", StringComparison.OrdinalIgnoreCase))
 									{
 										monitor.Log($"Custom NPC Exclusions wants to hide {n.Name} from the calendar. Complying...");
 										hideBirthday = true;
