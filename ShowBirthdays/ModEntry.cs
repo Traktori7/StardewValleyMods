@@ -374,7 +374,7 @@ namespace ShowBirthdays
 						if (days[i].containsPoint((int)point.X, (int)point.Y))
 						{
 							clickedDay = i + 1;
-							Monitor.Log("Player clicked on day " + clickedDay + " at " + point.ToString());
+							Monitor.Log($"Player clicked on day {clickedDay} at {point}");
 						}
 					});
 				}
@@ -523,8 +523,15 @@ namespace ShowBirthdays
 				foreach (NPC n in Utility.getAllCharacters())
 				{
 					// Checking for 0 should eliminate a lot of the non-friendable NPCs, needs verification
-					if (n.isVillager() && n.Birthday_Day > 0)
+					if (n.isVillager() && n.Birthday_Day > 0 && n.Birthday_Season is not null)
 					{
+						// It returns 1-4 for the base game seasons, and -1 if there were no matches
+						if (Utility.getSeasonNumber(n.Birthday_Season) == -1)
+						{
+							monitor.Log($"Encountered an unexpected season for birthday {n.Birthday_Season} {n.Birthday_Day} for {n.Name}", LogLevel.Debug);
+							continue;
+						}
+
 						bool hideBirthday = false;
 
 						// Was Custom NPC Exclusions found
@@ -541,7 +548,7 @@ namespace ShowBirthdays
 									// Check if it contains 'All' or 'Calendar'
 									if (rules[i].Equals("All", StringComparison.OrdinalIgnoreCase) || rules[i].Equals("Calendar", StringComparison.OrdinalIgnoreCase))
 									{
-										monitor.Log("Custom NPC Exclusions wants to hide " + n.Name + " from the calendar. Complying...");
+										monitor.Log($"Custom NPC Exclusions wants to hide {n.Name} from the calendar. Complying...");
 										hideBirthday = true;
 										break;
 									}
@@ -561,7 +568,7 @@ namespace ShowBirthdays
 						}
 						else
 						{
-							monitor.Log(string.Format("NPC: {0} Birthday: {1} {2} was hidden from the calendar.", n.Name, n.Birthday_Season, n.Birthday_Day));
+							monitor.Log($"NPC: {n.Name} Birthday: {n.Birthday_Season} {n.Birthday_Day} was hidden from the calendar.");
 						}
 					}
 				}
@@ -587,7 +594,7 @@ namespace ShowBirthdays
 
 				if (list == null)
 				{
-					monitor.Log("Failed to add birthday " + season + birthday.ToString() + " for " + n.Name, LogLevel.Error);
+					monitor.Log($"Failed to add birthday {season} {birthday} for {n.Name}", LogLevel.Error);
 					return;
 				}
 
