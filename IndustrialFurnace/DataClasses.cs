@@ -108,25 +108,25 @@ namespace IndustrialFurnace
 	/// </summary>
 	public class BlueprintData
 	{
-		public string Name { get; set; }
-		public string Description { get; set; }
-		public string BlueprintType { get; set; }
-		public string NameOfBuildingToUpgrade { get; set; }
-		public string MaxOccupants { get; set; }
-		public string Width { get; set; }
-		public string Height { get; set; }
-		public string HumanDoorX { get; set; }
-		public string HumanDoorY { get; set; }
-		public string AnimalDoorX { get; set; }
-		public string AnimalDoorY { get; set; }
-		public string MapToWarpTo { get; set; }
-		public string SourceRectForMenuViewX { get; set; }
-		public string SourceRectForMenuViewY { get; set; }
-		public string ActionBehaviour { get; set; }
-		public string NamesOfBuildingLocations { get; set; }
-		public string Magical { get; set; }
-		public string DaysToBuild { get; set; }
-		public string MoneyRequired { get; set; }
+		public string? Name { get; set; }
+		public string? Description { get; set; }
+		public string? BlueprintType { get; set; }
+		public string? NameOfBuildingToUpgrade { get; set; }
+		public string? MaxOccupants { get; set; }
+		public string? Width { get; set; }
+		public string? Height { get; set; }
+		public string? HumanDoorX { get; set; }
+		public string? HumanDoorY { get; set; }
+		public string? AnimalDoorX { get; set; }
+		public string? AnimalDoorY { get; set; }
+		public string? MapToWarpTo { get; set; }
+		public string? SourceRectForMenuViewX { get; set; }
+		public string? SourceRectForMenuViewY { get; set; }
+		public string? ActionBehaviour { get; set; }
+		public string? NamesOfBuildingLocations { get; set; }
+		public string? Magical { get; set; }
+		public string? DaysToBuild { get; set; }
+		public string? MoneyRequired { get; set; }
 		public List<RequiredItem> ItemsRequired { get; set; }
 
 
@@ -145,8 +145,10 @@ namespace IndustrialFurnace
 
 			string items = String.Join(" ", ItemsRequired);
 
+#pragma warning disable CS8601 // Possible null reference assignment.
 			s = String.Join("/", new string[] {items, Width, Height, HumanDoorX, HumanDoorY, AnimalDoorX, AnimalDoorY, MapToWarpTo, i18n.Get("industrial-furnace.name"), i18n.Get("industrial-furnace.description"),
 				BlueprintType, NameOfBuildingToUpgrade, SourceRectForMenuViewX, SourceRectForMenuViewY, MaxOccupants, ActionBehaviour, NamesOfBuildingLocations, MoneyRequired, Magical, DaysToBuild});
+#pragma warning restore CS8601 // Possible null reference assignment.
 
 			return s;
 		}
@@ -158,7 +160,7 @@ namespace IndustrialFurnace
 	/// </summary>
 	public class RequiredItem
 	{
-		public string ItemName { get; set; }
+		public string? ItemName { get; set; }
 		public int ItemAmount { get; set; }
 		public int ItemID { get; set; }
 
@@ -187,7 +189,7 @@ namespace IndustrialFurnace
 		/// <summary>Returns the smelting rule that matches the input item's ID or null if no matches were found.</summary>
 		/// <param name="inputItemID"></param>
 		/// <returns></returns>
-		public SmeltingRule GetSmeltingRuleFromInputID(int inputItemID)
+		public SmeltingRule? GetSmeltingRuleFromInputID(int inputItemID)
 		{
 			foreach (SmeltingRule rule in SmeltingRules)
 			{
@@ -205,13 +207,13 @@ namespace IndustrialFurnace
 	/// </summary>
 	public class SmeltingRule
 	{
-		public string InputItemName { get; set; }
+		public string? InputItemName { get; set; }
 		public int InputItemID { get; set; }
 		public int InputItemAmount { get; set; }
-		public string OutputItemName { get; set; }
+		public string? OutputItemName { get; set; }
 		public int OutputItemID { get; set; }
 		public int OutputItemAmount { get; set; }
-		public string RequiredModID { get; set; }
+		public string? RequiredModID { get; set; }
 	}
 
 

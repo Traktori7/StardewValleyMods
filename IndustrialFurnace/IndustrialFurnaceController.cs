@@ -12,16 +12,16 @@ namespace IndustrialFurnace
 	/// </summary>
 	public class IndustrialFurnaceController
 	{
-		private ModEntry mod;
+		private readonly ModEntry mod;
 
 		public readonly int ID;
 		public bool CurrentlyOn;
 
-		public Chest input = new Chest();
-		public Chest output = new Chest();
+		public readonly Chest input = new Chest();
+		public readonly Chest output = new Chest();
 
-		public Building furnace;
-		public LightSource lightSource;
+		public Building? furnace;
+		public LightSource? lightSource;
 
 
 		public IndustrialFurnaceController(int tag, bool currentlyOn, ModEntry mod)
@@ -84,7 +84,7 @@ namespace IndustrialFurnace
 				true,
 				new InventoryMenu.highlightThisItem(InventoryMenu.highlightAllItems),
 				null,
-				(string)null,
+				null,
 				(itemParam, farmer) => GrabItemFromChest(itemParam, farmer),
 				false,
 				true,
@@ -98,7 +98,7 @@ namespace IndustrialFurnace
 		}
 
 
-		public void TakeFromOutput(Item item, Farmer who = null)
+		public void TakeFromOutput(Item item, Farmer? who = null)
 		{
 			if (Constants.TargetPlatform == GamePlatform.Android)
 			{

@@ -50,13 +50,13 @@ namespace IndustrialFurnace
 		private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
 		private readonly string fireAnimationDataPath = Path.Combine("assets", "FireAnimation.json");
 
-		private ModConfig config;
-		private ModSaveData modSaveData;
-		private BlueprintData blueprintData;
-		private SmokeAnimationData smokeAnimationData;
-		private FireAnimationData fireAnimationData;
-		private SmeltingRulesContainer newSmeltingRules;
-		private ITranslationHelper i18n;
+		private ModConfig? config;
+		private ModSaveData? modSaveData;
+		private BlueprintData? blueprintData;
+		private SmokeAnimationData? smokeAnimationData;
+		private FireAnimationData? fireAnimationData;
+		private SmeltingRulesContainer? newSmeltingRules;
+		private ITranslationHelper? i18n;
 
 		//private Texture2D furnaceOn;
 		//private Texture2D furnaceOff;
@@ -112,7 +112,7 @@ namespace IndustrialFurnace
 			}
 		}
 
-		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
+		private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
 		{
 			if (e.Name.IsEquivalentTo(assetOnName))
 			{
@@ -144,25 +144,31 @@ namespace IndustrialFurnace
 			{
 				//e.LoadFromModFile<Texture2D>(smokeAnimationSpritePath, AssetLoadPriority.Low);
 				// Create a right sized dummy texture since its width can't be resized by CP
-				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY), AssetLoadPriority.Low);
+				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, smokeAnimationData!.SpriteSizeX, smokeAnimationData.SpriteSizeY), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationSpriteName))
 			{
 				//e.LoadFromModFile<Texture2D>(fireAnimationSpritePath, AssetLoadPriority.Low);
 				// Create a right sized dummy texture since its width can't be resized by CP
-				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY), AssetLoadPriority.Low);
+				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, fireAnimationData!.SpriteSizeX, fireAnimationData.SpriteSizeY), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(smeltingRulesDataName))
 			{
+#pragma warning disable CS8603 // Possible null reference return.
 				e.LoadFrom(() => Helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath), AssetLoadPriority.Low);
+#pragma warning restore CS8603 // Possible null reference return.
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
+#pragma warning disable CS8603 // Possible null reference return.
 				e.LoadFrom(() => Helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath), AssetLoadPriority.Low);
+#pragma warning restore CS8603 // Possible null reference return.
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationDataName))
 			{
+#pragma warning disable CS8603 // Possible null reference return.
 				e.LoadFrom(() => Helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath), AssetLoadPriority.Low);
+#pragma warning restore CS8603 // Possible null reference return.
 			}
 			else if (e.NameWithoutLocale.IsEquivalentTo(blueprintsPath))
 			{
@@ -173,7 +179,7 @@ namespace IndustrialFurnace
 					// TODO: Use the name specified in the blueprint?
 					blueprintData = Helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath);
 
-					dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
+					dictionary.Data[furnaceBuildingType] = blueprintData!.ToBlueprintString(i18n!);
 				});
 			}
 		}
@@ -200,7 +206,7 @@ namespace IndustrialFurnace
 		}
 
 
-		public IndustrialFurnaceController GetController(int ID)
+		public IndustrialFurnaceController? GetController(int ID)
 		{
 			int index = GetIndexOfFurnaceControllerWithTag(ID);
 
@@ -224,7 +230,7 @@ namespace IndustrialFurnace
 		** Private methods
 		*********/
 		/// <summary>Raised before the game state is updated</summary>
-		private void OnUpdateTicking(object sender, UpdateTickingEventArgs e)
+		private void OnUpdateTicking(object? sender, UpdateTickingEventArgs e)
 		{
 			// This should be true if the player has another window focused or the game is still in the main menu
 			if (!Game1.game1.IsActive || Game1.getFarm() is null) return;
@@ -233,7 +239,7 @@ namespace IndustrialFurnace
 			if (smokeAnimationData is null || fireAnimationData is null) return;
 
 			// Don't check anything if the animations aren't enabled
-			if (!config.EnableSmokeAnimation && !config.EnableFireAnimation) return;
+			if (!config!.EnableSmokeAnimation && !config.EnableFireAnimation) return;
 
 			GameLocation location = Game1.player.currentLocation;
 
@@ -244,6 +250,12 @@ namespace IndustrialFurnace
 					IndustrialFurnaceController controller = GetPerScreenFurnaceController(i);
 
 					if (!controller.CurrentlyOn) continue;
+
+					if (controller.furnace is null)
+					{
+						Monitor.Log($"Furnace for controller {controller.ID} was null", LogLevel.Error);
+						continue;
+					}
 
 					int x = controller.furnace.tileX.Value;
 					int y = controller.furnace.tileY.Value;
@@ -278,7 +290,7 @@ namespace IndustrialFurnace
 			string textureName;
 			Rectangle rectangle;
 
-			if (smokeAnimationData.UseCustomSprite)
+			if (smokeAnimationData!.UseCustomSprite)
 			{
 				textureName = smokeAnimationSpriteName;
 				rectangle = new Rectangle(0, 0, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY);
@@ -311,7 +323,7 @@ namespace IndustrialFurnace
 		{
 			TemporaryAnimatedSprite sprite;
 
-			double randomX = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnXRandomOffset - fireAnimationData.SpawnXRandomOffset;
+			double randomX = 2 * Game1.random.NextDouble() * fireAnimationData!.SpawnXRandomOffset - fireAnimationData.SpawnXRandomOffset;
 			double randomY = 2 * Game1.random.NextDouble() * fireAnimationData.SpawnYRandomOffset - fireAnimationData.SpawnYRandomOffset;
 
 			Vector2 pos = new Vector2(x * 64f + fireAnimationData.SpawnXOffset + (float)randomX,
@@ -349,7 +361,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after the game is launched, right before the first update tick.</summary>
-		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
+		private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
 		{
 			// Integration for Generic Mod Config Menu by spacechase0
 			var GMCMApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuAPI>("spacechase0.GenericModConfigMenu");
@@ -364,49 +376,49 @@ namespace IndustrialFurnace
 
 				GMCMApi.AddSectionTitle(
 					mod: ModManifest,
-					text: () => i18n.Get("gmcm.main-label"),
+					text: () => i18n!.Get("gmcm.main-label"),
 					tooltip: null
 				);
 
 				GMCMApi.AddNumberOption(
 					mod: ModManifest,
-					getValue: () => config.CoalAmount,
-					setValue: (int val) => config.CoalAmount = val,
-					name: () => i18n.Get("gmcm.coal-amount-label"),
-					tooltip: () => i18n.Get("gmcm.coal-amount-description"),
+					getValue: () => config!.CoalAmount,
+					setValue: (int val) => config!.CoalAmount = val,
+					name: () => i18n!.Get("gmcm.coal-amount-label"),
+					tooltip: () => i18n!.Get("gmcm.coal-amount-description"),
 					min: 1,
 					max: 100
 				);
 
 				GMCMApi.AddBoolOption(
 					mod: ModManifest,
-					getValue: () => config.InstantSmelting,
-					setValue: (bool val) => config.InstantSmelting = val,
-					name: () => i18n.Get("gmcm.instant-smelting-label"),
-					tooltip: () => i18n.Get("gmcm.instant-smelting-description")
+					getValue: () => config!.InstantSmelting,
+					setValue: (bool val) => config!.InstantSmelting = val,
+					name: () => i18n!.Get("gmcm.instant-smelting-label"),
+					tooltip: () => i18n!.Get("gmcm.instant-smelting-description")
 				);
 
 				GMCMApi.AddBoolOption(
 					mod: ModManifest,
-					getValue: () => config.EnableSmokeAnimation,
-					setValue: (bool val) => config.EnableSmokeAnimation = val,
-					name: () => i18n.Get("gmcm.smoke-label"),
-					tooltip: () => i18n.Get("gmcm.smoke-description")
+					getValue: () => config!.EnableSmokeAnimation,
+					setValue: (bool val) => config!.EnableSmokeAnimation = val,
+					name: () => i18n!.Get("gmcm.smoke-label"),
+					tooltip: () => i18n!.Get("gmcm.smoke-description")
 				);
 
 				GMCMApi.AddBoolOption(
 					mod: ModManifest,
-					getValue: () => config.EnableFireAnimation,
-					setValue: (bool val) => config.EnableFireAnimation = val,
-					name: () => i18n.Get("gmcm.fire-label"),
-					tooltip: () => i18n.Get("gmcm.fire-description")
+					getValue: () => config!.EnableFireAnimation,
+					setValue: (bool val) => config!.EnableFireAnimation = val,
+					name: () => i18n!.Get("gmcm.fire-label"),
+					tooltip: () => i18n!.Get("gmcm.fire-description")
 				);
 			}
 		}
 
 
 		/// <summary>Raised after the game returns to the title screen.</summary>
-		private void OnReturnedToTitle(object sender, ReturnedToTitleEventArgs e)
+		private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
 		{
 			// Reset stuff
 			modSaveData = null;
@@ -415,7 +427,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after a mod message is received over the network.</summary>
-		private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
+		private void OnModMessageReceived(object? sender, ModMessageReceivedEventArgs e)
 		{
 			if (e.FromModID == ModManifest.UniqueID)
 			{
@@ -445,7 +457,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised before/after the game writes data to save file.</summary>
-		private void OnSaving(object sender, SavingEventArgs e)
+		private void OnSaving(object? sender, SavingEventArgs e)
 		{
 			if (Game1.player.IsMainPlayer)
 			{
@@ -456,20 +468,14 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).</summary>
-		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
+		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			//newSmeltingRules = helper.Data.ReadJsonFile<SmeltingRulesContainer>(smeltingRulesDataPath);
-			//newSmeltingRules = Game1.content.Load<SmeltingRulesContainer>(smeltingRulesDataName);
 			newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
 
 			CheckSmeltingRules();
 
-			//smokeAnimationData = helper.Data.ReadJsonFile<SmokeAnimationData>(smokeAnimationDataPath);
-			//smokeAnimationData = Game1.content.Load<SmokeAnimationData>(smokeAnimationDataName);
 			smokeAnimationData = Helper.GameContent.Load<SmokeAnimationData>(smokeAnimationDataName);
 
-			//fireAnimationData = helper.Data.ReadJsonFile<FireAnimationData>(fireAnimationDataPath);
-			//fireAnimationData = Game1.content.Load<FireAnimationData>(fireAnimationDataName);
 			fireAnimationData = Helper.GameContent.Load<FireAnimationData>(fireAnimationDataName);
 
 
@@ -482,7 +488,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
-		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+		private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
 		{
 			// Ignore if player hasn't loaded in yet, or is stuck in a menu or cutscene
 			if (!Context.IsPlayerFree)
@@ -508,7 +514,7 @@ namespace IndustrialFurnace
 					}
 
 					Vector2 tile;
-					Building building = furnace.furnace;
+					Building? building = furnace.furnace;
 
 					if (building is null)
 					{
@@ -562,7 +568,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>The event called when the day starts.</summary>
-		private void OnDayStarted(object sender, DayStartedEventArgs e)
+		private void OnDayStarted(object? sender, DayStartedEventArgs e)
 		{
 			if (Game1.player.IsMainPlayer)
 			{
@@ -585,7 +591,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after buildings are added/removed in any location.</summary>
-		private void OnBuildingListChanged(object sender, BuildingListChangedEventArgs e)
+		private void OnBuildingListChanged(object? sender, BuildingListChangedEventArgs e)
 		{
 			// Add added furnaces to the controller list
 			foreach (Building building in e.Added)
@@ -620,7 +626,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>The event called after an active menu is opened or closed.</summary>
-		private void OnMenuChanged(object sender, MenuChangedEventArgs e)
+		private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
 		{
 			// If a menu was closed, reset the currently looked at furnace, just in case.
 			if (e.NewMenu is null)
@@ -647,7 +653,7 @@ namespace IndustrialFurnace
 				// Try to add the furnace to Instant Buildings' menu
 				try
 				{
-					Type instantBuildMenuType = Type.GetType("BitwiseJonMods.InstantBuildMenu, BitwiseJonMods.InstantBuildings");
+					Type? instantBuildMenuType = Type.GetType("BitwiseJonMods.InstantBuildMenu, BitwiseJonMods.InstantBuildings");
 
 					if (e.NewMenu.GetType().Equals(instantBuildMenuType))
 					{
@@ -674,7 +680,7 @@ namespace IndustrialFurnace
 
 		/// <summary>Raised after the game world is drawn to the sprite patch, before it's rendered to the screen.
 		/// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.</summary>
-		private void OnRenderedWorld(object sender, RenderedWorldEventArgs e)
+		private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
 		{
 			
 			foreach (IndustrialFurnaceController controller in furnaces.Value)
@@ -692,13 +698,13 @@ namespace IndustrialFurnace
 				if (controller.output.items.Count <= 0 || controller.output.items[0] == null)
 					continue;
 
-				Building building = controller.furnace;
+				Building? building = controller.furnace;
 
 				// Get the bobbing from current time
 				float num = (float)(4.0 * Math.Round(Math.Sin(DateTime.Now.TimeOfDay.TotalMilliseconds / 250.0), 2));
 
 				e.SpriteBatch.Draw(Game1.mouseCursors,
-					Game1.GlobalToLocal(Game1.viewport, new Vector2(building.tileX.Value * 64 + 180, building.tileY.Value * 64 - 64 + num)),
+					Game1.GlobalToLocal(Game1.viewport, new Vector2(building!.tileX.Value * 64 + 180, building.tileY.Value * 64 - 64 + num)),
 					new Rectangle?(new Rectangle(141, 465, 20, 24)), Color.White * 0.75f, 0.0f, Vector2.Zero, 4f,
 					SpriteEffects.None,
 					(float)((building.tileY.Value + 1) * 64 / 10000.0 + 9.99999997475243E-07 + building.tileX.Value / 10000.0));
@@ -713,7 +719,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after the current player moves to a new location.</summary>
-		private void OnWarped(object sender, WarpedEventArgs e)
+		private void OnWarped(object? sender, WarpedEventArgs e)
 		{
 			if (e.IsLocalPlayer)
 				UpdateFurnaceLights();
@@ -728,7 +734,7 @@ namespace IndustrialFurnace
 			// Items can be placed only if the furnace is NOT on
 			if (furnace.CurrentlyOn)
 			{
-				DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
+				DisplayMessage(i18n!.Get("message.furnace-running"), 3, "cancel");
 				return false;
 			}
 
@@ -737,10 +743,10 @@ namespace IndustrialFurnace
 			if (heldItem == null) return false;
 
 			int objectId = heldItem.ParentSheetIndex;
-			SmeltingRule rule = newSmeltingRules.GetSmeltingRuleFromInputID(objectId);
+			SmeltingRule? rule = newSmeltingRules!.GetSmeltingRuleFromInputID(objectId);
 
 			// Check if the object is on the smeltables list
-			if (rule != null)
+			if (rule is not null)
 			{
 				// Prevent the game from division by 0, even if the player edits the rules
 				if (rule.InputItemAmount == 0)
@@ -764,7 +770,7 @@ namespace IndustrialFurnace
 				}
 				else
 				{
-					DisplayMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
+					DisplayMessage(i18n!.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
 					return false;
 				}
 			}
@@ -774,7 +780,7 @@ namespace IndustrialFurnace
 				// The input has items to smelt
 				if (furnace.input.items.Count > 0)
 				{
-					if (heldItem.Stack >= config.CoalAmount)
+					if (heldItem.Stack >= config!.CoalAmount)
 					{
 						Game1.player.removeItemsFromInventory(objectId, config.CoalAmount);
 
@@ -798,19 +804,19 @@ namespace IndustrialFurnace
 					}
 					else
 					{
-						DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+						DisplayMessage(i18n!.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
 						return false;
 					}
 				}
 				else
 				{
-					DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+					DisplayMessage(i18n!.Get("message.place-something-first"), 3, "cancel");
 					return false;
 				}
 			}
 			else
 			{
-				DisplayMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
+				DisplayMessage(i18n!.Get("message.cant-smelt-this"), 3, "cancel");
 				return false;
 			}
 		}
@@ -859,7 +865,7 @@ namespace IndustrialFurnace
 			// Now the dictionary consists of ItemID: Amount
 			foreach (KeyValuePair<int, int> kvp in smeltablesDictionary)
 			{
-				SmeltingRule rule = newSmeltingRules.GetSmeltingRuleFromInputID(kvp.Key);
+				SmeltingRule? rule = newSmeltingRules!.GetSmeltingRuleFromInputID(kvp.Key);
 
 				if (rule is null)
 				{
@@ -915,8 +921,14 @@ namespace IndustrialFurnace
 		/// <summary>Switches the building's texture between ON and OFF versions</summary>
 		/// <param name="building"></param>
 		/// <param name="currentlyOn"></param>
-		private void UpdateTexture(Building building, bool currentlyOn)
+		private void UpdateTexture(Building? building, bool currentlyOn)
 		{
+			if (building is null)
+			{
+				Monitor.Log("Tried to update the texture of a null building", LogLevel.Error);
+				return;
+			}
+
 			if (currentlyOn)
 			{
 				building.texture = new Lazy<Texture2D>(() => Helper.GameContent.Load<Texture2D>(assetOnName));
@@ -982,8 +994,8 @@ namespace IndustrialFurnace
 		/// <param name="controller"></param>
 		private void CreateLight(IndustrialFurnaceController controller)
 		{
-			Building building = controller.furnace;
-			Vector2 pos = new Vector2(building.tileX.Value * 64 + fireAnimationData.LightSourceXOffset, building.tileY.Value * 64 + fireAnimationData.LightSourceYOffset);
+			Building building = controller.furnace!;
+			Vector2 pos = new Vector2(building.tileX.Value * 64 + fireAnimationData!.LightSourceXOffset, building.tileY.Value * 64 + fireAnimationData.LightSourceYOffset);
 
 			LightSource light = new LightSource(4, pos, fireAnimationData.LightSourceScaleMultiplier, Color.DarkCyan, controller.ID * lightSourceIDMultiplier);
 
@@ -997,7 +1009,7 @@ namespace IndustrialFurnace
 		/// <param name="s">Displayed message</param>
 		/// <param name="type">Message type</param>
 		/// <param name="sound">Sound effect</param>
-		private void DisplayMessage(string s, int type, string sound = null)
+		private void DisplayMessage(string s, int type, string? sound = null)
 		{
 			Game1.addHUDMessage(new HUDMessage(s, type));
 
@@ -1011,7 +1023,7 @@ namespace IndustrialFurnace
 		/// <summary>Remove rules that depend on not installed mods</summary>
 		private void CheckSmeltingRules()
 		{
-			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID != null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
+			newSmeltingRules!.SmeltingRules.RemoveAll(item => item.RequiredModID != null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
 		}
 
 
@@ -1100,7 +1112,7 @@ namespace IndustrialFurnace
 		/// <summary>Update the save data to match the controllers data</summary>
 		private void InitializeSaveData()
 		{
-			modSaveData.ClearOldData();
+			modSaveData!.ClearOldData();
 			modSaveData.ParseControllersToModSaveData(furnaces.Value);
 		}
 
