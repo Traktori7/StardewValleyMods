@@ -81,7 +81,6 @@ namespace ShowBirthdays
 				api.AddTextOption(
 					mod: ModManifest,
 					getValue: () => config.cycleType,
-					//setValue: (string val) => config.cycleType = val,
 					setValue: (string val) => ChangeCycleType(val),
 					name: () => Helper.Translation.Get("type-label"),
 					tooltip: () => Helper.Translation.Get("type-desc"),
@@ -262,10 +261,10 @@ namespace ShowBirthdays
 							{
 								days[listOfDays[i] - 1].texture = bdHelper.GetSprite(Game1.currentSeason, listOfDays[i], true);
 							}
-							catch
+							catch (Exception ex)
 							{
-								// Generic error for now.
 								Monitor.Log("There was a problem with parsing the birthday data", LogLevel.Error);
+								Monitor.Log(ex.ToString(), LogLevel.Error);
 							}
 						}
 
@@ -296,7 +295,7 @@ namespace ShowBirthdays
 					}
 					break;
 				default:
-					Monitor.Log("Unknown cycle type encountered in OnRenderingActiveMenu", LogLevel.Error);
+					Monitor.Log($"Unknown cycle type {cycleType} encountered in OnRenderingActiveMenu", LogLevel.Error);
 					break;
 			}
 		}
@@ -304,6 +303,7 @@ namespace ShowBirthdays
 
 		/// <summary>
 		/// Draws the icon for shared birthdays and redraws the cursor and hover text
+		/// TODO: Figure out a way to do this without redrawing the cursor and the hover text?
 		/// </summary>
 		private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
 		{
@@ -367,6 +367,7 @@ namespace ShowBirthdays
 				for (int i = 0; i < days.Count; i++)
 				{
 					// Force the game in UIMode to get the correct scaling for pixel coordinates, since for calendar UIMode = false, for some reason...
+					// TODO: Test if this is still the case
 					Game1.InUIMode(() =>
 					{
 						Vector2 point = e.Cursor.GetScaledScreenPixels();
@@ -392,6 +393,7 @@ namespace ShowBirthdays
 				return;
 			
 			// Force the game in UIMode to get the correct scaling for pixel coordinates, since for calendar UIMode = false, for some reason...
+			// TODO: Test if this is still the case
 			Game1.InUIMode(() =>
 			{
 				cursorPos = e.NewPosition.GetScaledScreenPixels();
@@ -761,7 +763,7 @@ namespace ShowBirthdays
 				{
 					// Increment the index and loop it back to 0 if we reached the end
 					currentSpriteIndex++;
-					if (currentSpriteIndex == list.Count)
+					if (currentSpriteIndex >= list.Count)
 						currentSpriteIndex = 0;
 				}
 
