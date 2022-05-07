@@ -1,7 +1,6 @@
 {
 	// the offset scale: 64 is one tile
-	"Enabled": true,
-	//
+	// should the mod load a custom sprite
 	"UseCustomSprite": false,
 	// time between spawns in milliseconds
 	"SpawnFrequency": 500,

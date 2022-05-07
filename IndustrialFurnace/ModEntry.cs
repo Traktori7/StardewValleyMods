@@ -233,7 +233,7 @@ namespace IndustrialFurnace
 			if (smokeAnimationData is null || fireAnimationData is null) return;
 
 			// Don't check anything if the animations aren't enabled
-			if (!smokeAnimationData.Enabled && !fireAnimationData.Enabled) return;
+			if (!config.EnableSmokeAnimation && !config.EnableFireAnimation) return;
 
 			GameLocation location = Game1.player.currentLocation;
 
@@ -248,11 +248,11 @@ namespace IndustrialFurnace
 					int x = controller.furnace.tileX.Value;
 					int y = controller.furnace.tileY.Value;
 
-					if (smokeAnimationData.Enabled && e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
+					if (config.EnableSmokeAnimation && e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
 					{
 						location.temporarySprites.Add(CreateSmokeSprite(x, y));
 					}
-					if (fireAnimationData.Enabled && e.IsMultipleOf(fireAnimationData.SpawnFrequency * 60 / 1000))
+					if (config.EnableFireAnimation && e.IsMultipleOf(fireAnimationData.SpawnFrequency * 60 / 1000))
 					{
 						// Spark only randomly
 						if (Game1.random.NextDouble() < fireAnimationData.SpawnChance)
@@ -384,6 +384,22 @@ namespace IndustrialFurnace
 					setValue: (bool val) => config.InstantSmelting = val,
 					name: () => i18n.Get("gmcm.instant-smelting-label"),
 					tooltip: () => i18n.Get("gmcm.instant-smelting-description")
+				);
+
+				GMCMApi.AddBoolOption(
+					mod: ModManifest,
+					getValue: () => config.EnableSmokeAnimation,
+					setValue: (bool val) => config.EnableSmokeAnimation = val,
+					name: () => i18n.Get("gmcm.smoke-label"),
+					tooltip: () => i18n.Get("gmcm.smoke-description")
+				);
+
+				GMCMApi.AddBoolOption(
+					mod: ModManifest,
+					getValue: () => config.EnableFireAnimation,
+					setValue: (bool val) => config.EnableFireAnimation = val,
+					name: () => i18n.Get("gmcm.fire-label"),
+					tooltip: () => i18n.Get("gmcm.fire-description")
 				);
 			}
 		}
