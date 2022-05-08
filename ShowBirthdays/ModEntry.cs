@@ -150,7 +150,7 @@ namespace ShowBirthdays
 			for (int i = 1; i <= days.Count; i++)
 			{
 				// Build the hover text from festival, birthdays and wedding if applicable
-				string newHoverText = "";
+				string newHoverText = string.Empty;
 
 				// Add the festival text if needed
 				// NOTE: Adding the festival name to the hover text makes the billboard.draw think it's someone's birthday and tries to draw
@@ -176,7 +176,7 @@ namespace ShowBirthdays
 				{
 					for (int j = 0; j < listOfNPCs.Count; j++)
 					{
-						if (!newHoverText.Equals(""))
+						if (newHoverText.Length > 0)
 						{
 							newHoverText += Environment.NewLine;
 						}
@@ -197,7 +197,7 @@ namespace ShowBirthdays
 				else
 				{
 					// If there was no birthday, reset the hover text incase a festival name was added
-					newHoverText = "";
+					newHoverText = string.Empty;
 				}
 
 				// Get a refrence to the list of weddings
@@ -208,7 +208,7 @@ namespace ShowBirthdays
 				{
 					for (int j = 0; j < weddings.GetValue().Count / 2; j++)
 					{
-						if (!newHoverText.Equals(""))
+						if (newHoverText.Length > 0)
 						{
 							newHoverText += Environment.NewLine;
 						}
@@ -809,8 +809,8 @@ namespace ShowBirthdays
 	public interface IGenericModConfigAPI
 	{
 		void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false);
-		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string> tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string> formatValue = null, string fieldId = null);
-		void AddTextOption(IManifest mod, Func<string> getValue, Action<string> setValue, Func<string> name, Func<string> tooltip = null, string[] allowedValues = null, Func<string, string> formatAllowedValue = null, string fieldId = null);
-		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
+		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string>? tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string>? formatValue = null, string? fieldId = null);
+		void AddTextOption(IManifest mod, Func<string> getValue, Action<string> setValue, Func<string> name, Func<string>? tooltip = null, string[]? allowedValues = null, Func<string, string>? formatAllowedValue = null, string? fieldId = null);
+		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string>? tooltip = null, string? fieldId = null);
 	}
 }

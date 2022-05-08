@@ -50,13 +50,13 @@ namespace IndustrialFurnace
 		private readonly string smokeAnimationDataPath = Path.Combine("assets", "SmokeAnimation.json");
 		private readonly string fireAnimationDataPath = Path.Combine("assets", "FireAnimation.json");
 
-		private ModConfig? config;
+		private ModConfig config = null!;
 		private ModSaveData? modSaveData;
 		private BlueprintData? blueprintData;
-		private SmokeAnimationData? smokeAnimationData;
-		private FireAnimationData? fireAnimationData;
-		private SmeltingRulesContainer? newSmeltingRules;
-		private ITranslationHelper? i18n;
+		private SmokeAnimationData smokeAnimationData = null!;
+		private FireAnimationData fireAnimationData = null!;
+		private SmeltingRulesContainer newSmeltingRules = null!;
+		private ITranslationHelper i18n = null!;
 
 		//private Texture2D furnaceOn;
 		//private Texture2D furnaceOff;
@@ -239,7 +239,7 @@ namespace IndustrialFurnace
 			if (smokeAnimationData is null || fireAnimationData is null) return;
 
 			// Don't check anything if the animations aren't enabled
-			if (!config!.EnableSmokeAnimation && !config.EnableFireAnimation) return;
+			if (!config.EnableSmokeAnimation && !config.EnableFireAnimation) return;
 
 			GameLocation location = Game1.player.currentLocation;
 
@@ -376,42 +376,42 @@ namespace IndustrialFurnace
 
 				GMCMApi.AddSectionTitle(
 					mod: ModManifest,
-					text: () => i18n!.Get("gmcm.main-label"),
+					text: () => i18n.Get("gmcm.main-label"),
 					tooltip: null
 				);
 
 				GMCMApi.AddNumberOption(
 					mod: ModManifest,
-					getValue: () => config!.CoalAmount,
-					setValue: (int val) => config!.CoalAmount = val,
-					name: () => i18n!.Get("gmcm.coal-amount-label"),
-					tooltip: () => i18n!.Get("gmcm.coal-amount-description"),
+					getValue: () => config.CoalAmount,
+					setValue: (int val) => config.CoalAmount = val,
+					name: () => i18n.Get("gmcm.coal-amount-label"),
+					tooltip: () => i18n.Get("gmcm.coal-amount-description"),
 					min: 1,
 					max: 100
 				);
 
 				GMCMApi.AddBoolOption(
 					mod: ModManifest,
-					getValue: () => config!.InstantSmelting,
-					setValue: (bool val) => config!.InstantSmelting = val,
-					name: () => i18n!.Get("gmcm.instant-smelting-label"),
-					tooltip: () => i18n!.Get("gmcm.instant-smelting-description")
+					getValue: () => config.InstantSmelting,
+					setValue: (bool val) => config.InstantSmelting = val,
+					name: () => i18n.Get("gmcm.instant-smelting-label"),
+					tooltip: () => i18n.Get("gmcm.instant-smelting-description")
 				);
 
 				GMCMApi.AddBoolOption(
 					mod: ModManifest,
-					getValue: () => config!.EnableSmokeAnimation,
-					setValue: (bool val) => config!.EnableSmokeAnimation = val,
-					name: () => i18n!.Get("gmcm.smoke-label"),
-					tooltip: () => i18n!.Get("gmcm.smoke-description")
+					getValue: () => config.EnableSmokeAnimation,
+					setValue: (bool val) => config.EnableSmokeAnimation = val,
+					name: () => i18n.Get("gmcm.smoke-label"),
+					tooltip: () => i18n.Get("gmcm.smoke-description")
 				);
 
 				GMCMApi.AddBoolOption(
 					mod: ModManifest,
-					getValue: () => config!.EnableFireAnimation,
-					setValue: (bool val) => config!.EnableFireAnimation = val,
-					name: () => i18n!.Get("gmcm.fire-label"),
-					tooltip: () => i18n!.Get("gmcm.fire-description")
+					getValue: () => config.EnableFireAnimation,
+					setValue: (bool val) => config.EnableFireAnimation = val,
+					name: () => i18n.Get("gmcm.fire-label"),
+					tooltip: () => i18n.Get("gmcm.fire-description")
 				);
 			}
 		}
@@ -734,7 +734,7 @@ namespace IndustrialFurnace
 			// Items can be placed only if the furnace is NOT on
 			if (furnace.CurrentlyOn)
 			{
-				DisplayMessage(i18n!.Get("message.furnace-running"), 3, "cancel");
+				DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
 				return false;
 			}
 
@@ -770,7 +770,7 @@ namespace IndustrialFurnace
 				}
 				else
 				{
-					DisplayMessage(i18n!.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
+					DisplayMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
 					return false;
 				}
 			}
@@ -780,7 +780,7 @@ namespace IndustrialFurnace
 				// The input has items to smelt
 				if (furnace.input.items.Count > 0)
 				{
-					if (heldItem.Stack >= config!.CoalAmount)
+					if (heldItem.Stack >= config.CoalAmount)
 					{
 						Game1.player.removeItemsFromInventory(objectId, config.CoalAmount);
 
@@ -804,19 +804,19 @@ namespace IndustrialFurnace
 					}
 					else
 					{
-						DisplayMessage(i18n!.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+						DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
 						return false;
 					}
 				}
 				else
 				{
-					DisplayMessage(i18n!.Get("message.place-something-first"), 3, "cancel");
+					DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
 					return false;
 				}
 			}
 			else
 			{
-				DisplayMessage(i18n!.Get("message.cant-smelt-this"), 3, "cancel");
+				DisplayMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
 				return false;
 			}
 		}
@@ -1129,8 +1129,8 @@ namespace IndustrialFurnace
 	public interface IGenericModConfigMenuAPI
 	{
 		void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false);
-		void AddSectionTitle(IManifest mod, Func<string> text, Func<string> tooltip = null);
-		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
-		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string> tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string> formatValue = null, string fieldId = null);
+		void AddSectionTitle(IManifest mod, Func<string> text, Func<string>? tooltip = null);
+		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string>? tooltip = null, string? fieldId = null);
+		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string>? tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string>? formatValue = null, string? fieldId = null);
 	}
 }
