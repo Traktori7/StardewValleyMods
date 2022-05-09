@@ -204,11 +204,11 @@ namespace IndustrialFurnace
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
-				e.LoadFrom(() => LoadJson<SmeltingRulesContainer>(smokeAnimationDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => LoadJson<SmokeAnimationData>(smokeAnimationDataPath), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationDataName))
 			{
-				e.LoadFrom(() => LoadJson<SmeltingRulesContainer>(fireAnimationDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => LoadJson<FireAnimationData>(fireAnimationDataPath), AssetLoadPriority.Low);
 			}
 			else if (e.NameWithoutLocale.IsEquivalentTo(blueprintsPath))
 			{
