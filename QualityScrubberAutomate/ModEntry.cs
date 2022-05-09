@@ -40,7 +40,7 @@ namespace QualityScrubberAutomate
 
 			if (automateApi != null && qualityScrubberApi != null)
 			{
-				automateApi.AddFactory(new QualityScrubberAutomationFactory(qualityScrubberApi.controller));
+				automateApi.AddFactory(new QualityScrubberAutomationFactory(qualityScrubberApi.controller, Monitor));
 			}
 			else
 			{
@@ -59,17 +59,20 @@ namespace QualityScrubberAutomate
 
 	public class QualityScrubberMachine : IMachine
 	{
+		private readonly IMonitor monitor;
+
 		private readonly SObject machineObject;
-		private QualityScrubberController controller;
+		private readonly QualityScrubberController controller;
 
 		public string MachineTypeID { get; }
 		public GameLocation Location { get; }
 		public Rectangle TileArea { get; }
 
 
-		public QualityScrubberMachine(QualityScrubberController controller, SObject entity, GameLocation location, in Vector2 tile)
+		public QualityScrubberMachine(QualityScrubberController controller, IMonitor monitor, SObject entity, GameLocation location, in Vector2 tile)
 		{
 			this.controller = controller;
+			this.monitor = monitor;
 			this.machineObject = entity;
 			this.Location = location;
 			this.TileArea = new Rectangle((int)tile.X, (int)tile.Y, 1, 1);
@@ -99,14 +102,21 @@ namespace QualityScrubberAutomate
 
 		public bool SetInput(IStorage input)
 		{
-			if (input.TryGetIngredient(item => controller.CanProcess(item.Sample, machineObject), 1, out IConsumable consumable))
+			if (input.TryGetIngredient(item => controller.CanProcess(item.Sample, machineObject), 1, out IConsumable? consumable))
 			{
-				Item ingredient = consumable.Take();
+				Item? ingredient = consumable.Take();
 
-				machineObject.heldObject.Value = controller.GetOutputObject(ingredient);
-				machineObject.MinutesUntilReady = controller.Duration;
+				if (ingredient is not null)
+				{
+					machineObject.heldObject.Value = controller.GetOutputObject(ingredient);
+					machineObject.MinutesUntilReady = controller.Duration;
 
-				return true;
+					return true;
+				}
+				else
+				{
+					monitor.Log("The input was unexpectedly null", LogLevel.Error);
+				}
 			}
 
 			return false;

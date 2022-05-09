@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
@@ -12,11 +13,13 @@ namespace QualityScrubberAutomate
 {
 	class QualityScrubberAutomationFactory : IAutomationFactory
 	{
+		private readonly IMonitor monitor;
 		private readonly QualityScrubberController controller;
 
 
-		public QualityScrubberAutomationFactory(QualityScrubberController controller)
+		public QualityScrubberAutomationFactory(QualityScrubberController controller, IMonitor monitor)
 		{
+			this.monitor = monitor;
 			this.controller = controller;
 		}
 
@@ -25,7 +28,7 @@ namespace QualityScrubberAutomate
 		{
 			if (obj.Name == "Quality Scrubber")
 			{
-				return new QualityScrubberMachine(controller, obj, location, tile);
+				return new QualityScrubberMachine(controller, monitor, obj, location, tile);
 			}
 
 			return null;

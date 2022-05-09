@@ -78,11 +78,18 @@ namespace IndustrialFurnaceAutomate
 
 
 		/// <summary>Get the output item.</summary>
-		public ITrackedStack GetOutput()
+		public ITrackedStack? GetOutput()
 		{
 			IList<Item> inventory = controller.output.items;
 
-			return new TrackedItem(inventory.FirstOrDefault(item => item != null), onEmpty: OnOutputTaken);
+			Item? item = inventory.FirstOrDefault(item => item is not null);
+
+			if (item is not null)
+			{
+				return new TrackedItem(item, onEmpty: OnOutputTaken);
+			}
+
+			return null;
 		}
 
 

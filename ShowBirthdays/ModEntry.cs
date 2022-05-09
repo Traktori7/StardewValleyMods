@@ -37,17 +37,6 @@ namespace ShowBirthdays
 		{
 			// Initialize the helper
 			bdHelper = new BirthdayHelper(Monitor, Helper.ModRegistry, Helper.GameContent);
-			// Refresh the config
-			config = Helper.ReadConfig<ModConfig>();
-
-			// Load the icon from the mod folder
-			iconTexture = Helper.GameContent.Load<Texture2D>(assetName);
-
-			// Check if the loading succeeded
-			if (iconTexture is null)
-			{
-				Monitor.Log("Failed loading the icon " + assetName, LogLevel.Error);
-			}
 
 			helper.Events.Content.AssetRequested += OnAssetRequested;
 			helper.Events.Display.MenuChanged += OnMenuChanged;
@@ -123,6 +112,18 @@ namespace ShowBirthdays
 
 		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
+			// Load the icon from the mod folder
+			iconTexture = Helper.GameContent.Load<Texture2D>(assetName);
+
+			// Check if the loading succeeded
+			if (iconTexture is null)
+			{
+				Monitor.Log("Failed loading the icon " + assetName, LogLevel.Error);
+			}
+
+			// Refresh the config
+			config = Helper.ReadConfig<ModConfig>();
+
 			// Update the cycle type
 			ChangeCycleType(config.cycleType);
 		}
