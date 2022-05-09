@@ -143,10 +143,10 @@ namespace IndustrialFurnace
 		{
 			string s;
 
-			string items = String.Join(" ", ItemsRequired);
+			string items = string.Join(" ", ItemsRequired);
 
 #pragma warning disable CS8601 // Possible null reference assignment.
-			s = String.Join("/", new string[] {items, Width, Height, HumanDoorX, HumanDoorY, AnimalDoorX, AnimalDoorY, MapToWarpTo, i18n.Get("industrial-furnace.name"), i18n.Get("industrial-furnace.description"),
+			s = string.Join("/", new string[] {items, Width, Height, HumanDoorX, HumanDoorY, AnimalDoorX, AnimalDoorY, MapToWarpTo, i18n.Get("industrial-furnace.name"), i18n.Get("industrial-furnace.description"),
 				BlueprintType, NameOfBuildingToUpgrade, SourceRectForMenuViewX, SourceRectForMenuViewY, MaxOccupants, ActionBehaviour, NamesOfBuildingLocations, MoneyRequired, Magical, DaysToBuild});
 #pragma warning restore CS8601 // Possible null reference assignment.
 
@@ -219,33 +219,33 @@ namespace IndustrialFurnace
 
 	public class SmokeAnimationData
 	{
-		public bool UseCustomSprite { get; set; }
-		public uint SpawnFrequency { get; set; }
-		public int SpawnXOffset { get; set; }
-		public int SpawnYOffset { get; set; }
-		public int SpriteSizeX { get; set; }
-		public int SpriteSizeY { get; set; }
-		public float SmokeScale { get; set; }
-		public float SmokeScaleChange { get; set; }
+		public bool UseCustomSprite { get; set; } = false;
+		public uint SpawnFrequency { get; set; } = 500;
+		public int SpawnXOffset { get; set; } = 68;
+		public int SpawnYOffset { get; set; } = -64;
+		public int SpriteSizeX { get; set; } = 10;
+		public int SpriteSizeY { get; set; } = 10;
+		public float SmokeScale { get; set; } = 2;
+		public float SmokeScaleChange { get; set; } = 0.02f;
 	}
 
 
 	public class FireAnimationData
 	{
-		public bool UseCustomSprite { get; set; }
-		public uint SpawnFrequency { get; set; }
-		public float SpawnChance { get; set; }
-		public int SpawnXOffset { get; set; }
-		public int SpawnYOffset { get; set; }
-		public int SpawnXRandomOffset { get; set; }
-		public int SpawnYRandomOffset { get; set; }
-		public int SpriteSizeX { get; set; }
-		public int SpriteSizeY { get; set; }
-		public int AnimationSpeed { get; set; }
-		public int AnimationLength { get; set; }
-		public float SoundEffectChance { get; set; }
-		public int LightSourceXOffset { get; set; }
-		public int LightSourceYOffset { get; set; }
-		public float LightSourceScaleMultiplier { get; set; }
+		public bool UseCustomSprite { get; set; } = false;
+		public uint SpawnFrequency { get; set; } = 500;
+		public float SpawnChance { get; set; } = 0.2f;
+		public int SpawnXOffset { get; set; } = 64;
+		public int SpawnYOffset { get; set; } = 18;
+		public int SpawnXRandomOffset { get; set; } = 16;
+		public int SpawnYRandomOffset { get; set; } = 4;
+		public int SpriteSizeX { get; set; } = 64;
+		public int SpriteSizeY { get; set; } = 64;
+		public int AnimationSpeed { get; set; } = 100;
+		public int AnimationLength { get; set; } = 4;
+		public float SoundEffectChance { get; set; } = 0.05f;
+		public int LightSourceXOffset { get; set; } = 96;
+		public int LightSourceYOffset { get; set; } = 96;
+		public float LightSourceScaleMultiplier { get; set; } = 1.5f;
 	}
 }

@@ -12,7 +12,7 @@ namespace QualityScrubberAutomate
 {
 	class QualityScrubberAutomationFactory : IAutomationFactory
 	{
-		private QualityScrubberController controller { get; set; }
+		private readonly QualityScrubberController controller;
 
 
 		public QualityScrubberAutomationFactory(QualityScrubberController controller)
@@ -21,7 +21,7 @@ namespace QualityScrubberAutomate
 		}
 
 
-		public IAutomatable GetFor(SObject obj, GameLocation location, in Vector2 tile)
+		public IAutomatable? GetFor(SObject obj, GameLocation location, in Vector2 tile)
 		{
 			if (obj.Name == "Quality Scrubber")
 			{
@@ -32,19 +32,19 @@ namespace QualityScrubberAutomate
 		}
 
 
-		public IAutomatable GetFor(TerrainFeature feature, GameLocation location, in Vector2 tile)
+		public IAutomatable? GetFor(TerrainFeature feature, GameLocation location, in Vector2 tile)
 		{
 			return null;
 		}
 
 
-		public IAutomatable GetFor(Building building, BuildableGameLocation location, in Vector2 tile)
+		public IAutomatable? GetFor(Building building, BuildableGameLocation location, in Vector2 tile)
 		{
 			return null;
 		}
 
 
-		public IAutomatable GetForTile(GameLocation location, in Vector2 tile)
+		public IAutomatable? GetForTile(GameLocation location, in Vector2 tile)
 		{
 			return null;
 		}

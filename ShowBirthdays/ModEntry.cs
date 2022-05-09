@@ -10,6 +10,7 @@ using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
+
 namespace ShowBirthdays
 {
 	class ModEntry : Mod
@@ -24,8 +25,8 @@ namespace ShowBirthdays
 		private int clickedDay = -1;
 		private Vector2 cursorPos = new Vector2();
 
-		private BirthdayHelper? bdHelper;
-		private ModConfig? config;
+		private BirthdayHelper bdHelper = null!;
+		private ModConfig config = null!;
 
 		private Texture2D? iconTexture;
 		private readonly string assetName = PathUtilities.NormalizeAssetName("Traktori.ShowBirthdays/Icon");
@@ -34,6 +35,20 @@ namespace ShowBirthdays
 
 		public override void Entry(IModHelper helper)
 		{
+			// Initialize the helper
+			bdHelper = new BirthdayHelper(Monitor, Helper.ModRegistry, Helper.GameContent);
+			// Refresh the config
+			config = Helper.ReadConfig<ModConfig>();
+
+			// Load the icon from the mod folder
+			iconTexture = Helper.GameContent.Load<Texture2D>(assetName);
+
+			// Check if the loading succeeded
+			if (iconTexture is null)
+			{
+				Monitor.Log("Failed loading the icon " + assetName, LogLevel.Error);
+			}
+
 			helper.Events.Content.AssetRequested += OnAssetRequested;
 			helper.Events.Display.MenuChanged += OnMenuChanged;
 			helper.Events.Display.RenderingActiveMenu += OnRenderingActiveMenu;
@@ -60,7 +75,7 @@ namespace ShowBirthdays
 			var api = Helper.ModRegistry.GetApi<IGenericModConfigAPI>("spacechase0.GenericModConfigMenu");
 
 			// Register options for GMCM
-			if (api != null)
+			if (api is not null)
 			{
 				api.Register(
 					mod: ModManifest,
@@ -108,22 +123,8 @@ namespace ShowBirthdays
 
 		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			// Initialize the helper
-			bdHelper = new BirthdayHelper(Monitor, Helper.ModRegistry, Helper.GameContent);
-			// Refresh the config
-			config = Helper.ReadConfig<ModConfig>();
-
 			// Update the cycle type
 			ChangeCycleType(config.cycleType);
-
-			// Load the icon from the mod folder
-			iconTexture = Helper.GameContent.Load<Texture2D>(assetName);
-
-			// Check if the loading succeeded
-			if (iconTexture == null)
-			{
-				Monitor.Log("Failed loading the icon " + assetName, LogLevel.Error);
-			}
 		}
 
 
@@ -137,14 +138,14 @@ namespace ShowBirthdays
 				return;
 			}
 
-			bdHelper!.RecheckBirthdays();
+			bdHelper.RecheckBirthdays();
 
 			// List of all the birthday days for the season
 			List<int> list = bdHelper.GetDays(Game1.currentSeason);
 
 			// Get the calendar's days since the menu is quaranteed to be the calendar
-			Billboard? billboard = e.NewMenu as Billboard;
-			List<ClickableTextureComponent> days = billboard!.calendarDays;
+			Billboard billboard = (e.NewMenu as Billboard)!;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			// NOTE: Remember that i goes from 1 to 28, so substract 1 from it to use as the index!
 			for (int i = 1; i <= days.Count; i++)
@@ -237,18 +238,18 @@ namespace ShowBirthdays
 			if (!IsCalendarActive(Game1.activeClickableMenu))
 				return;
 
-			if (currentCycle < config!.cycleDuration)
+			if (currentCycle < config.cycleDuration)
 				currentCycle++;
 
 			// Get birthday days that are shared
-			List<int> listOfDays = bdHelper!.GetDays(Game1.currentSeason, true);
+			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
 			if (listOfDays.Count == 0)
 				return;
 
 			// Get the calendar's days since the menu is quaranteed to be the calendar
-			Billboard? billboard = Game1.activeClickableMenu as Billboard;
-			List<ClickableTextureComponent> days = billboard!.calendarDays;
+			Billboard billboard = (Game1.activeClickableMenu as Billboard)!;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
 			switch (cycleType)
 			{
@@ -307,20 +308,20 @@ namespace ShowBirthdays
 		/// </summary>
 		private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
 		{
-			if (!config!.showIcon || !IsCalendarActive(Game1.activeClickableMenu))
+			if (!config.showIcon || !IsCalendarActive(Game1.activeClickableMenu) || iconTexture is null)
 				return;
 
 			// Get birthday days that are shared
-			List<int> listOfDays = bdHelper!.GetDays(Game1.currentSeason, true);
+			List<int> listOfDays = bdHelper.GetDays(Game1.currentSeason, true);
 
 			if (listOfDays.Count == 0)
 				return;
 
 			// Get the calendar's days since the menu is quaranteed to be the calendar
-			Billboard? billboard = Game1.activeClickableMenu as Billboard;
-			List<ClickableTextureComponent> days = billboard!.calendarDays;
+			Billboard billboard = (Game1.activeClickableMenu as Billboard)!;
+			List<ClickableTextureComponent> days = billboard.calendarDays;
 
-			int offsetX = iconTexture!.Width * Game1.pixelZoom;
+			int offsetX = iconTexture.Width * Game1.pixelZoom;
 			int offsetY = iconTexture.Height * Game1.pixelZoom;
 
 			for (int i = 0; i < listOfDays.Count; i++)
@@ -358,7 +359,7 @@ namespace ShowBirthdays
 				// Dangerous conversion, but calendarOpen should prevent problems for now
 				List<ClickableTextureComponent> days = (Game1.activeClickableMenu as Billboard)!.calendarDays;
 
-				if (days == null || days.Count < 28)
+				if (days is null || days.Count < 28)
 				{
 					Monitor.Log("Calendar days are messed up for some reason in OnButtonPressed, aborting any drawing by the mod.");
 					return;
@@ -409,11 +410,11 @@ namespace ShowBirthdays
 			// Set to false by default to avoid repeating and switch to true at the end if everything was okay
 			calendarOpen = false;
 
-			if (activeMenu == null || activeMenu is not Billboard billboard)
+			if (activeMenu is null || activeMenu is not Billboard billboard)
 				return false;
 
 			// Check if we're looking the calendar or the quest part of the billboard
-			bool dailyQuests = this.Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
+			bool dailyQuests = Helper.Reflection.GetField<bool>(billboard, "dailyQuestBoard").GetValue();
 
 			// Do nothing if looking at the quest board
 			if (dailyQuests)
@@ -421,7 +422,7 @@ namespace ShowBirthdays
 
 			List<ClickableTextureComponent> days = billboard.calendarDays;
 
-			if (days == null || days.Count< 28)
+			if (days is null || days.Count< 28)
 			{
 				Monitor.Log("Calendar days are messed up for some reason in OnMenuChanged, aborting any drawing by the mod.");
 				return false;
@@ -444,7 +445,7 @@ namespace ShowBirthdays
 			Helper.Events.Input.CursorMoved -= OnCursorMoved;
 
 			//Change the cycle type and subscribe to the correct events to prevent unnecessary event checks
-			config!.cycleType = newType;
+			config.cycleType = newType;
 
 			switch (newType)
 			{
@@ -501,10 +502,10 @@ namespace ShowBirthdays
 
 				if (modRegistry.IsLoaded("Esca.CustomNPCExclusions"))
 				{
-					IModInfo? modInfo = modRegistry.Get("Esca.CustomNPCExclusions");
+					IModInfo modInfo = modRegistry.Get("Esca.CustomNPCExclusions")!;
 
 					// Is the version new enough to contain the calendar exclusion
-					if (modInfo!.Manifest.Version.CompareTo(new SemanticVersion("1.4.0")) >= 0)
+					if (modInfo.Manifest.Version.CompareTo(new SemanticVersion("1.4.0")) >= 0)
 					{
 						monitor.Log("Custom NPC Exclusions 1.4.0 or newer found.");
 
@@ -515,7 +516,8 @@ namespace ShowBirthdays
 						}
 						catch (Exception e)
 						{
-							monitor.Log("Loading Custom NPC Exclusion rules failed." + e, LogLevel.Error);
+							monitor.Log("Loading Custom NPC Exclusion rules failed.", LogLevel.Error);
+							monitor.Log(e.ToString(), LogLevel.Error);
 						}
 					}
 				}
@@ -596,7 +598,7 @@ namespace ShowBirthdays
 			{
 				List<Birthday>? list = GetListOfBirthdays(season);
 
-				if (list == null)
+				if (list is null)
 				{
 					monitor.Log($"Failed to add birthday {season} {birthday} for {n.Name}", LogLevel.Error);
 					return;
@@ -605,7 +607,7 @@ namespace ShowBirthdays
 				// null if birthday hasn't been added
 				Birthday? day = list.Find(x => x.day == birthday);
 
-				if (day == null)
+				if (day is null)
 				{
 					// Add the birthday
 					Birthday newDay = new Birthday(monitor, birthday, contentHelper);
@@ -632,7 +634,7 @@ namespace ShowBirthdays
 
 				List<int> days = new List<int>();
 
-				if (list != null)
+				if (list is not null)
 				{
 					for (int i = 0; i < list.Count; i++)
 					{
@@ -652,7 +654,7 @@ namespace ShowBirthdays
 			{
 				Birthday? birthday = GetBirthday(season, day);
 
-				if (birthday == null)
+				if (birthday is null)
 					return null;
 				else
 					return birthday.GetNPCs();
@@ -666,7 +668,7 @@ namespace ShowBirthdays
 			{
 				List<Birthday>? list = GetListOfBirthdays(season);
 
-				if (list == null)
+				if (list is null)
 					return null;
 
 				return list.Find(x => x.day == day);

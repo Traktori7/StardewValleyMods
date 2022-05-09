@@ -3,6 +3,7 @@ using StardewValley;
 using StardewValley.Objects;
 using StardewValley.Menus;
 using StardewValley.Buildings;
+using SObject = StardewValley.Object;
 
 
 namespace IndustrialFurnace
@@ -40,7 +41,7 @@ namespace IndustrialFurnace
 
 		public void AddItemsToSmelt(int objectId, int amount)
 		{
-			StardewValley.Object item = new StardewValley.Object(objectId, amount);
+			SObject item = new SObject(objectId, amount);
 			input.addItem(item);
 		}
 
@@ -50,7 +51,7 @@ namespace IndustrialFurnace
 			//Keep creating stacks of max size if needed to avoid going over it.
 			while (amount > 0)
 			{
-				StardewValley.Object item = new StardewValley.Object(objectId, amount);
+				SObject item = new SObject(objectId, amount);
 
 				if (item.Stack > item.maximumStackSize())
 				{
@@ -62,7 +63,7 @@ namespace IndustrialFurnace
 					amount = 0;
 				}
 
-				if (item != null && Utility.canItemBeAddedToThisInventoryList(item, output.items, 36))
+				if (item is not null && Utility.canItemBeAddedToThisInventoryList(item, output.items, 36))
 				{
 					output.addItem(item);
 				}
@@ -78,7 +79,7 @@ namespace IndustrialFurnace
 			TakeFromOutput(item, who);
 
 
-			Game1.activeClickableMenu = (IClickableMenu)new ItemGrabMenu(
+			Game1.activeClickableMenu = new ItemGrabMenu(
 				output.items,
 				false,
 				true,
@@ -104,7 +105,7 @@ namespace IndustrialFurnace
 			{
 				// Handle moving the items to the player's inventory since I have no idea how the android version handles its menus
 				// Will most likely break at some point
-				if (who != null && who.addItemToInventoryBool(item))
+				if (who is not null && who.addItemToInventoryBool(item))
 				{
 					output.items.Remove(item);
 					output.clearNulls();
