@@ -38,7 +38,7 @@ namespace QualityScrubberAutomate
 			
 			qualityScrubberApi = Helper.ModRegistry.GetApi<IQualityScrubberApi>(qualityScrubberUniqueID);
 
-			if (automateApi != null && qualityScrubberApi != null)
+			if (automateApi is not null && qualityScrubberApi is not null)
 			{
 				automateApi.AddFactory(new QualityScrubberAutomationFactory(qualityScrubberApi.controller, Monitor));
 			}

@@ -114,7 +114,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
-		public bool IsBuildingIndustrialFurnace(Building building)
+		public static bool IsBuildingIndustrialFurnace(Building building)
 		{
 			return building.buildingType.Value.Equals(furnaceBuildingType);
 		}
@@ -705,7 +705,7 @@ namespace IndustrialFurnace
 				// Copied from Mill.cs draw(SpriteBatch b) with slight edits
 
 				// Check if there is items to render
-				if (controller.output.items.Count <= 0 || controller.output.items[0] == null)
+				if (controller.output.items.Count <= 0 || controller.output.items[0] is null)
 					continue;
 
 				Building? building = controller.furnace;
@@ -718,13 +718,13 @@ namespace IndustrialFurnace
 
 				e.SpriteBatch.Draw(Game1.mouseCursors,
 					Game1.GlobalToLocal(Game1.viewport, new Vector2(building.tileX.Value * 64 + 180, building.tileY.Value * 64 - 64 + num)),
-					new Rectangle?(new Rectangle(141, 465, 20, 24)), Color.White * 0.75f, 0.0f, Vector2.Zero, 4f,
+					new Rectangle(141, 465, 20, 24), Color.White * 0.75f, 0.0f, Vector2.Zero, 4f,
 					SpriteEffects.None,
 					(float)((building.tileY.Value + 1) * 64 / 10000.0 + 9.99999997475243E-07 + building.tileX.Value / 10000.0));
 
 				e.SpriteBatch.Draw(Game1.objectSpriteSheet,
 					Game1.GlobalToLocal(Game1.viewport, new Vector2(building.tileX.Value * 64 + 185 + 32 + 4, building.tileY.Value * 64 - 32 + 8 + num)),
-					new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, controller.output.items[0].ParentSheetIndex, 16, 16)),
+					Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, controller.output.items[0].ParentSheetIndex, 16, 16),
 					Color.White * 0.75f, 0.0f, new Vector2(8f, 8f), 4f, SpriteEffects.None,
 					(float)((building.tileY.Value + 1) * 64 / 10000.0 + 9.99999974737875E-06 + building.tileX.Value / 10000.0));
 			}
@@ -753,7 +753,7 @@ namespace IndustrialFurnace
 
 			// Get the current held object, null for tools etc.
 			SObject heldItem = Game1.player.ActiveObject;
-			if (heldItem == null) return false;
+			if (heldItem is null) return false;
 
 			int objectId = heldItem.ParentSheetIndex;
 			SmeltingRule? rule = newSmeltingRules.GetSmeltingRuleFromInputID(objectId);
@@ -1023,7 +1023,7 @@ namespace IndustrialFurnace
 		/// <param name="s">Displayed message</param>
 		/// <param name="type">Message type</param>
 		/// <param name="sound">Sound effect</param>
-		private void DisplayMessage(string s, int type, string? sound = null)
+		private static void DisplayMessage(string s, int type, string? sound = null)
 		{
 			Game1.addHUDMessage(new HUDMessage(s, type));
 
@@ -1103,7 +1103,7 @@ namespace IndustrialFurnace
 		}
 
 
-		private void DrawOutputMenu(IndustrialFurnaceController furnace)
+		private static void DrawOutputMenu(IndustrialFurnaceController furnace)
 		{
 			// Display the menu for the output chest
 			Game1.activeClickableMenu = new ItemGrabMenu(

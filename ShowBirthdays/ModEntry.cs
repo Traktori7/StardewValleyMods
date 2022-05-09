@@ -174,7 +174,7 @@ namespace ShowBirthdays
 				// Get the list of all NPCs with the birthday and add them to the hover text
 				List<NPC>? listOfNPCs = bdHelper.GetNpcs(Game1.currentSeason, i);
 
-				if (listOfNPCs != null)
+				if (listOfNPCs is not null)
 				{
 					for (int j = 0; j < listOfNPCs.Count; j++)
 					{

@@ -25,7 +25,7 @@ namespace IndustrialFurnace
 		/// <summary>Checks if the provided building is an Industrial Furnace.</summary>
 		public bool IsBuildingIndustrialFurnace(Building building)
 		{
-			return mod.IsBuildingIndustrialFurnace(building);
+			return IsBuildingIndustrialFurnace(building);
 		}
 
 

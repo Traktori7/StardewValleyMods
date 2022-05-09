@@ -67,7 +67,7 @@ namespace IndustrialFurnaceAutomate
 
 			//this.Entity.output.clearNulls();
 
-			if (controller.output.items.Any(item => item != null))
+			if (controller.output.items.Any(item => item is not null))
 			{
 				return MachineState.Done;
 			}

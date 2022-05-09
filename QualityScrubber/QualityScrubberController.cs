@@ -30,7 +30,7 @@ namespace QualityScrubber
 			if (inputItem is null)
 				return false;
 
-			if (machine.heldObject.Value != null)
+			if (machine.heldObject.Value is not null)
 			{
 				//Monitor.Log("The machine is already scrubbing!", LogLevel.Debug);
 				return false;
@@ -49,7 +49,7 @@ namespace QualityScrubber
 			}
 
 			// Ignore roe/wine/juice/jelly/pickles
-			if (!config.AllowPreserves && inputObject.preserve.Value != null)
+			if (!config.AllowPreserves && inputObject.preserve.Value is not null)
 			{
 				//Monitor.Log("You can't scrub these yet!", LogLevel.Debug);
 				return false;
