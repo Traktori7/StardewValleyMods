@@ -3,7 +3,6 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using SObject = StardewValley.Object;
-using Pathoschild.Stardew.Automate;
 using QualityScrubber;
 
 
@@ -90,13 +89,14 @@ namespace QualityScrubberAutomate
 		}
 
 
-		public ITrackedStack GetOutput()
+		public ITrackedStack? GetOutput()
 		{
-			return new TrackedItem(machineObject.heldObject.Value, onEmpty: item =>
+			return null;
+			/*return new TrackedItem(machineObject.heldObject.Value, onEmpty: item =>
 			{
 				machineObject.heldObject.Value = null;
 				machineObject.readyForHarvest.Value = false;
-			});
+			});*/
 		}
 
 

@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Pathoschild.Stardew.Automate;
 using StardewValley;
 using IndustrialFurnace;
 
@@ -86,7 +85,8 @@ namespace IndustrialFurnaceAutomate
 
 			if (item is not null)
 			{
-				return new TrackedItem(item, onEmpty: OnOutputTaken);
+				
+				//return new TrackedItem(item, onEmpty: OnOutputTaken);
 			}
 
 			return null;

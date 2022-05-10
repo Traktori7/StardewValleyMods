@@ -17,11 +17,4 @@
 	</ProjectReference>
 </ItemGroup>
 
-<ItemGroup>
-	<Reference Include="Automate">
-		<HintPath>..\..\StardewValleyModding\references\Automate.dll</HintPath>
-		<Private>false</Private>
-	</Reference>
-</ItemGroup>
-
 </Project>

@@ -1,14 +1,13 @@
 ﻿using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using Pathoschild.Stardew.Automate;
 using IndustrialFurnace;
 
 namespace IndustrialFurnaceAutomate
 {
 	class ModEntry : Mod
 	{
-		private IIndustrialFurnaceAPI? industrialFurnaceAPI;
-		private IAutomateAPI? automate;
+		//private IIndustrialFurnaceAPI? industrialFurnaceAPI;
+		//private IAutomateAPI? automate;
 
 
 		/*********
@@ -27,8 +26,9 @@ namespace IndustrialFurnaceAutomate
 		*********/
 		private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
 		{
-			automate = Helper.ModRegistry.GetApi<IAutomateAPI>("Pathoschild.Automate");
-			industrialFurnaceAPI = Helper.ModRegistry.GetApi<IIndustrialFurnaceAPI>("Traktori.IndustrialFurnace");
+			//var automationFactory = Helper.ModRegistry.GetApi<IAutomationFactory>("Pathoschild.Automate");
+			var automate = Helper.ModRegistry.GetApi<IAutomateAPI>("Pathoschild.Automate");
+			var industrialFurnaceAPI = Helper.ModRegistry.GetApi<IIndustrialFurnaceAPI>("Traktori.IndustrialFurnace");
 
 			if (automate is not null && industrialFurnaceAPI is not null)
 			{

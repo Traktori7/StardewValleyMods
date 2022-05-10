@@ -5,7 +5,6 @@ using StardewValley.Buildings;
 using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 using SObject = StardewValley.Object;
-using Pathoschild.Stardew.Automate;
 using QualityScrubber;
 
 
