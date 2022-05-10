@@ -57,6 +57,8 @@ namespace IndustrialFurnace
 		private SmeltingRulesContainer newSmeltingRules = null!;
 		private ITranslationHelper i18n = null!;
 
+		private Dictionary<string, string> smeltingRulesDictionary = null!;
+
 		// Mod support
 		private bool modInstantBuildingsFound = false;
 
@@ -114,7 +116,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
-		public static bool IsBuildingIndustrialFurnace(Building building)
+		public static bool MainIsBuildingIndustrialFurnace(Building building)
 		{
 			return building.buildingType.Value.Equals(furnaceBuildingType);
 		}
@@ -200,7 +202,7 @@ namespace IndustrialFurnace
 			}
 			else if (e.Name.IsEquivalentTo(smeltingRulesDataName))
 			{
-				e.LoadFrom(() => LoadJson<SmeltingRulesContainer>(smeltingRulesDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => LoadJson<Dictionary<string,string>>(smeltingRulesDataPath), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
@@ -219,7 +221,7 @@ namespace IndustrialFurnace
 					// TODO: Use the name specified in the blueprint?
 					blueprintData = Helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath)!;
 
-					dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n!);
+					dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
 				});
 			}
 		}
@@ -480,7 +482,8 @@ namespace IndustrialFurnace
 		/// <summary>Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).</summary>
 		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
+			//newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
+			smeltingRulesDictionary = Helper.GameContent.Load<Dictionary<string,string>>(smeltingRulesDataName);
 
 			CheckSmeltingRules();
 
@@ -606,7 +609,7 @@ namespace IndustrialFurnace
 			// Add added furnaces to the controller list
 			foreach (Building building in e.Added)
 			{
-				if (IsBuildingIndustrialFurnace(building))
+				if (MainIsBuildingIndustrialFurnace(building))
 				{
 					// Add the controller that takes care of the functionality of the furnace
 					IndustrialFurnaceController controller = new IndustrialFurnaceController(furnacesBuilt.Value, false, this)
@@ -622,7 +625,7 @@ namespace IndustrialFurnace
 			// Remove destroyed furnaces from the controller list
 			foreach (Building building in e.Removed)
 			{
-				if (IsBuildingIndustrialFurnace(building))
+				if (MainIsBuildingIndustrialFurnace(building))
 				{
 					int index = GetIndexOfFurnaceControllerWithTag(building.maxOccupants.Value);
 
@@ -1037,6 +1040,7 @@ namespace IndustrialFurnace
 		/// <summary>Remove rules that depend on not installed mods</summary>
 		private void CheckSmeltingRules()
 		{
+			newSmeltingRules = new(smeltingRulesDictionary);
 			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
 		}
 
@@ -1074,7 +1078,7 @@ namespace IndustrialFurnace
 			// Repopulate the list of furnaces, only checks the farm!
 			foreach (Building building in Game1.getFarm().buildings)
 			{
-				if (IsBuildingIndustrialFurnace(building))
+				if (MainIsBuildingIndustrialFurnace(building))
 				{
 					for (int i = 0; i < furnaces.Value.Count; i++)
 					{

@@ -180,9 +180,24 @@ namespace IndustrialFurnace
 		public List<SmeltingRule> SmeltingRules { get; set; }
 
 
-		public SmeltingRulesContainer()
+		public SmeltingRulesContainer(Dictionary<string, string> dict)
 		{
 			SmeltingRules = new List<SmeltingRule>();
+
+			foreach (var kvp in dict)
+			{
+				string[] s = kvp.Value.Split('/');
+				SmeltingRule smeltingRule = new();
+
+				smeltingRule.InputItemID = int.Parse(kvp.Key);
+				smeltingRule.InputItemAmount = int.Parse(s[0]);
+				smeltingRule.OutputItemID = int.Parse(s[1]);
+				smeltingRule.OutputItemAmount = int.Parse(s[2]);
+
+				smeltingRule.RequiredModID = s[3].Length > 0 ? s[3] : null;
+
+				SmeltingRules.Add(smeltingRule);
+			}
 		}
 
 
@@ -207,10 +222,8 @@ namespace IndustrialFurnace
 	/// </summary>
 	public class SmeltingRule
 	{
-		public string? InputItemName { get; set; }
 		public int InputItemID { get; set; }
 		public int InputItemAmount { get; set; }
-		public string? OutputItemName { get; set; }
 		public int OutputItemID { get; set; }
 		public int OutputItemAmount { get; set; }
 		public string? RequiredModID { get; set; }
