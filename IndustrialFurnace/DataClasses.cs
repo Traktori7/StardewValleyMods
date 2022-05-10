@@ -180,22 +180,33 @@ namespace IndustrialFurnace
 		public List<SmeltingRule> SmeltingRules { get; set; }
 
 
-		public SmeltingRulesContainer(Dictionary<string, string> dict)
+		public SmeltingRulesContainer(Dictionary<string, string> dict, IMonitor monitor)
 		{
 			SmeltingRules = new List<SmeltingRule>();
 
 			foreach (var kvp in dict)
 			{
-				string[] s = kvp.Value.Split('/');
 				SmeltingRule smeltingRule = new();
 
-				smeltingRule.InputItemID = int.Parse(kvp.Key);
-				smeltingRule.InputItemAmount = int.Parse(s[0]);
-				smeltingRule.OutputItemID = int.Parse(s[1]);
-				smeltingRule.OutputItemAmount = int.Parse(s[2]);
+				// Try to parse the smelting rule. If it fails, print error and skip.
+				try
+				{
+					string[] s = kvp.Value.Split('/');
+					
+					smeltingRule.InputItemID = int.Parse(kvp.Key);
+					smeltingRule.InputItemAmount = int.Parse(s[0]);
+					smeltingRule.OutputItemID = int.Parse(s[1]);
+					smeltingRule.OutputItemAmount = int.Parse(s[2]);
 
-				smeltingRule.RequiredModID = s[3].Length > 0 ? s[3] : null;
-
+					smeltingRule.RequiredModID = s[3].Length > 0 ? s[3] : null;
+				}
+				catch (Exception ex)
+				{
+					monitor.Log("Encoutered an exception while parsing smelting rules.", LogLevel.Error);
+					monitor.Log(ex.ToString(), LogLevel.Error);
+					continue;
+				}
+				
 				SmeltingRules.Add(smeltingRule);
 			}
 		}

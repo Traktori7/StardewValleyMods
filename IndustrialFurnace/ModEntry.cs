@@ -1040,7 +1040,7 @@ namespace IndustrialFurnace
 		/// <summary>Remove rules that depend on not installed mods</summary>
 		private void CheckSmeltingRules()
 		{
-			newSmeltingRules = new(smeltingRulesDictionary);
+			newSmeltingRules = new(smeltingRulesDictionary, Monitor);
 			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
 		}
 
