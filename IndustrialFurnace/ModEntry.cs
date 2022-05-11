@@ -57,6 +57,7 @@ namespace IndustrialFurnace
 		private SmeltingRulesContainer newSmeltingRules = null!;
 		private ITranslationHelper i18n = null!;
 
+		// The dictionary that temporarily holds the loaded rules that get parsed into the SmeltingRulesContainer
 		private Dictionary<string, string> smeltingRulesDictionary = null!;
 
 		// Mod support
@@ -95,9 +96,6 @@ namespace IndustrialFurnace
 			helper.Events.Multiplayer.ModMessageReceived += OnModMessageReceived;
 			helper.Events.Player.Warped += OnWarped;
 		}
-
-
-		
 
 
 		public override object GetApi()
@@ -479,7 +477,9 @@ namespace IndustrialFurnace
 		}
 
 
-		/// <summary>Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).</summary>
+		/// <summary>
+		/// Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).
+		/// </summary>
 		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
 			//newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
@@ -692,7 +692,8 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after the game world is drawn to the sprite patch, before it's rendered to the screen.
-		/// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.</summary>
+		/// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.
+		/// </summary>
 		private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
 		{
 			
@@ -750,7 +751,7 @@ namespace IndustrialFurnace
 			// Items can be placed only if the furnace is NOT on
 			if (furnace.CurrentlyOn)
 			{
-				DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
+				DisplayHudMessage(i18n.Get("message.furnace-running"), 3, "cancel");
 				return false;
 			}
 
@@ -786,7 +787,7 @@ namespace IndustrialFurnace
 				}
 				else
 				{
-					DisplayMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
+					DisplayHudMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
 					return false;
 				}
 			}
@@ -820,19 +821,19 @@ namespace IndustrialFurnace
 					}
 					else
 					{
-						DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+						DisplayHudMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
 						return false;
 					}
 				}
 				else
 				{
-					DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+					DisplayHudMessage(i18n.Get("message.place-something-first"), 3, "cancel");
 					return false;
 				}
 			}
 			else
 			{
-				DisplayMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
+				DisplayHudMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
 				return false;
 			}
 		}
@@ -1026,7 +1027,7 @@ namespace IndustrialFurnace
 		/// <param name="s">Displayed message</param>
 		/// <param name="type">Message type</param>
 		/// <param name="sound">Sound effect</param>
-		private static void DisplayMessage(string s, int type, string? sound = null)
+		private static void DisplayHudMessage(string s, int type, string? sound = null)
 		{
 			Game1.addHUDMessage(new HUDMessage(s, type));
 
@@ -1041,7 +1042,32 @@ namespace IndustrialFurnace
 		private void CheckSmeltingRules()
 		{
 			newSmeltingRules = new(smeltingRulesDictionary, Monitor);
-			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
+			//newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
+			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !IsAllModIDsLoaded(item.RequiredModID));
+		}
+
+
+		/// <summary>
+		/// Check if all of the mod IDs in the array are loaded
+		/// </summary>
+		/// <param name="s">The array of mod ID strings</param>
+		/// <returns>If all of the mod IDs were loaded</returns>
+		private bool IsAllModIDsLoaded(string[] s)
+		{
+			// This should never happen. The array should always be either null or have elements, but let's check against it and log it just in case
+			if (s.Length == 0)
+			{
+				Monitor.Log("Empty list of mod ids encountered", LogLevel.Warn);
+				return false;
+			}
+
+			for (int i = 0; i < s.Length; i++)
+			{
+				if (!Helper.ModRegistry.IsLoaded(s[i]))
+					return false;
+			}
+
+			return true;
 		}
 
 
@@ -1098,7 +1124,7 @@ namespace IndustrialFurnace
 
 				if (removed > 0)
 				{
-					Monitor.Log("Removed " + removed + " corrupted furnace controllers from the save file.", LogLevel.Warn);
+					Monitor.Log($"Removed {removed} corrupted furnace controllers from the save file.", LogLevel.Warn);
 
 					// Refresh the modSaveData
 					modSaveData.ParseControllersToModSaveData(furnaces.Value);

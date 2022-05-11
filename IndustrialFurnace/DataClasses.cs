@@ -198,11 +198,16 @@ namespace IndustrialFurnace
 					smeltingRule.OutputItemID = int.Parse(s[1]);
 					smeltingRule.OutputItemAmount = int.Parse(s[2]);
 
-					smeltingRule.RequiredModID = s[3].Length > 0 ? s[3] : null;
+					// The fourth entry is space delimited list of required mod IDs
+					if (s[3].Length > 0)
+					{
+						string[] modIDs = s[3].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+						smeltingRule.RequiredModID = modIDs.Length > 0 ? modIDs : null;
+					}
 				}
 				catch (Exception ex)
 				{
-					monitor.Log("Encoutered an exception while parsing smelting rules.", LogLevel.Error);
+					monitor.Log("Mod failed while parsing smelting rules. Ignoring the faulty rule.", LogLevel.Error);
 					monitor.Log(ex.ToString(), LogLevel.Error);
 					continue;
 				}
@@ -237,7 +242,7 @@ namespace IndustrialFurnace
 		public int InputItemAmount { get; set; }
 		public int OutputItemID { get; set; }
 		public int OutputItemAmount { get; set; }
-		public string? RequiredModID { get; set; }
+		public string[]? RequiredModID { get; set; }
 	}
 
 
