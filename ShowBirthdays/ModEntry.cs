@@ -188,7 +188,7 @@ namespace ShowBirthdays
 						// Old line before getting rid of Linq:
 						// newHoverText += (n.displayName.Last() != 's' && (LocalizedContentManager.CurrentLanguageCode != LocalizedContentManager.LanguageCode.de || (n.displayName.Last() != 'x' && n.displayName.Last() != 'ß' && n.displayName.Last() != 'z'))) ? Game1.content.LoadString("Strings\\UI:Billboard_Birthday", n.displayName) : Game1.content.LoadString("Strings\\UI:Billboard_SBirthday", n.displayName);
 
-						char last = n.displayName[n.displayName.Length - 1];
+						char last = n.displayName[^1];
 
 						newHoverText +=
 							(last == 's'
@@ -686,9 +686,10 @@ namespace ShowBirthdays
 					int index = Utility.getSeasonNumber(season);
 					return birthdays[index];
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
-					monitor.Log("Unknown season " + season, LogLevel.Error);
+					monitor.Log($"Unknown season {season}", LogLevel.Error);
+					monitor.Log(ex.ToString(), LogLevel.Error);
 					return null;
 				}
 
@@ -774,9 +775,10 @@ namespace ShowBirthdays
 				{
 					n = list[currentSpriteIndex];
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
 					monitor.Log("Getting the NPC from the index failed", LogLevel.Error);
+					monitor.Log(ex.ToString(), LogLevel.Error);
 					return null;
 				}
 
@@ -793,7 +795,7 @@ namespace ShowBirthdays
 				}
 
 				if (incrementSpriteIndex)
-					monitor.Log("Sprite changed from " + (currentSpriteIndex == 0 ? list[list.Count - 1].Name : list[currentSpriteIndex - 1].Name) + " to " + list[currentSpriteIndex].Name, LogLevel.Trace);
+					monitor.Log($"Sprite changed from {(currentSpriteIndex == 0 ? list[^1].Name : list[currentSpriteIndex - 1].Name)} to {list[currentSpriteIndex].Name}", LogLevel.Trace);
 
 				return texture;
 			}

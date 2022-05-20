@@ -1,0 +1,15 @@
+{
+	"Name": "Love of Cooking Harmony patch",
+	"Author": "Traktori",
+	"Version": "1.0.0",
+	"Description": "Fixes the invisible held item bug",
+	"UniqueID": "Traktori.LoveOfCookingPatch",
+	"EntryDll": "LoveOfCookingPatch.dll",
+	"MinimumApiVersion": "3.14.0",
+	"UpdateKeys": [ "" ],
+	"Dependencies": [
+		{
+			"UniqueID": "blueberry.LoveOfCooking"
+		}
+	]
+}

@@ -174,6 +174,10 @@ namespace IndustrialFurnace
 
 	/// <summary>
 	/// The data class for the smelting rules.
+	/// 
+	/// NOTE: Relying on RequiredModID doesn't work if the item is provided by Json Assets.
+	/// The token evaluation {{ItemId: Item name}} returns an error for unknown names and blocks
+	/// the Content Patcher edit.
 	/// </summary>
 	public class SmeltingRulesContainer
 	{
