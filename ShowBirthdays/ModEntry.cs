@@ -203,7 +203,7 @@ namespace ShowBirthdays
 				}
 
 				// Get a refrence to the list of weddings
-				IReflectedField<Dictionary<ClickableTextureComponent, List<string>>> weddings = this.Helper.Reflection.GetField<Dictionary<ClickableTextureComponent, List<string>>>(billboard, "_upcomingWeddings");
+				IReflectedField<Dictionary<ClickableTextureComponent, List<string>>> weddings = Helper.Reflection.GetField<Dictionary<ClickableTextureComponent, List<string>>>(billboard, "_upcomingWeddings");
 
 				// Wedding text from base game
 				if (weddings.GetValue().ContainsKey(days[i - 1]))

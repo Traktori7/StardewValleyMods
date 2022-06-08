@@ -1,0 +1,8 @@
+{
+	// GenericModConfigMenu
+	"gmcm.main-label": "Config options for Quality Scrubber",
+	"gmcm.duration-label": "Processing time",
+	"gmcm.duration-description": "The time it takes in in game minutes to process an input",
+	"gmcm.allow-honey-label": "Allow honey",
+	"gmcm.allow-honey-description": "Allow scrubbing honey"
+}

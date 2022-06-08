@@ -751,7 +751,7 @@ namespace IndustrialFurnace
 			// Items can be placed only if the furnace is NOT on
 			if (furnace.CurrentlyOn)
 			{
-				DisplayHudMessage(i18n.Get("message.furnace-running"), 3, "cancel");
+				DisplayHudMessage(i18n.Get("message.furnace-running"), HUDMessage.error_type, "cancel");
 				return false;
 			}
 
@@ -787,7 +787,7 @@ namespace IndustrialFurnace
 				}
 				else
 				{
-					DisplayHudMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
+					DisplayHudMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), HUDMessage.error_type, "cancel");
 					return false;
 				}
 			}
@@ -821,19 +821,19 @@ namespace IndustrialFurnace
 					}
 					else
 					{
-						DisplayHudMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+						DisplayHudMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), HUDMessage.error_type, "cancel");
 						return false;
 					}
 				}
 				else
 				{
-					DisplayHudMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+					DisplayHudMessage(i18n.Get("message.place-something-first"), HUDMessage.error_type, "cancel");
 					return false;
 				}
 			}
 			else
 			{
-				DisplayHudMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
+				DisplayHudMessage(i18n.Get("message.cant-smelt-this"), HUDMessage.error_type, "cancel");
 				return false;
 			}
 		}
