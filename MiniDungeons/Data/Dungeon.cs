@@ -7,9 +7,9 @@ using StardewModdingAPI.Utilities;
 using StardewValley;
 
 
-namespace MiniDungeons
+namespace MiniDungeons.Data
 {
-	internal class DungeonData
+	internal class Dungeon
 	{
 		public string DungeonName { get; set; } = string.Empty;
 		public string SpawnMapName { get; set; } = string.Empty;
@@ -17,15 +17,5 @@ namespace MiniDungeons
 		public int PortalX { get; set; }
 		public int PortalY { get; set; }
 		public List<DungeonMap> DungeonMaps { get; set; } = new List<DungeonMap>();
-	}
-
-
-	internal class DungeonMap
-	{
-		internal string MapFile { get; set; } = string.Empty;
-		internal int SpawnWeight { get; set; }
-		public int EntryX { get; set; }
-		public int EntryY { get; set; }
-		public string Challenge { get; set; } = string.Empty;
 	}
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -8,12 +10,12 @@ using StardewValley;
 using StardewValley.Monsters;
 
 
-namespace MiniDungeons.Dungeons
+namespace MiniDungeons
 {
-	internal class YobaDungeon : Dungeon
+	internal class DungeonLocation : GameLocation
 	{
-		public YobaDungeon(string name, DungeonMap mapType, Challenge challenge)
-			: base(name, mapType, challenge)
+		public DungeonLocation(string name)
+			: base(Path.Combine("Maps", name), name)
 		{
 
 		}

@@ -31,5 +31,25 @@
 				"Y": 23
 			}
 		]
+	},
+	{
+		"ChallengeName": "Collect1",
+		"Timer": -1,
+		"SpawnPoints": [
+			{
+				"X": 6,
+				"Y": 23
+			},
+			{
+				"X": 7,
+				"Y": 23
+			}
+		],
+		"SpawnedObjects": [
+			{
+				"ObjectID": 390,
+				"SpawnedAmount": 2
+			}
+		]
 	}
 ]

@@ -10,22 +10,19 @@ using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Monsters;
 
-using MiniDungeons.Dungeons;
-
 
 namespace MiniDungeons
 {
 	internal class DungeonManager
 	{
-		private readonly IMonitor monitor;
+		//public Dictionary<string, DungeonData> dungeonData = null!;
+		//public Dictionary<string, Challenge> challengeData = null!;
 
-		public Dictionary<string, DungeonData> dungeonData = null!;
-		public Dictionary<string, Challenge> challengeData = null!;
-
-		public readonly List<string> testedDungeons = new List<string>();
+		/*public readonly List<string> testedDungeons = new List<string>();
 		public readonly List<Dungeon> activeDungeons = new List<Dungeon>();
-		public readonly List<Dungeon> clearedDungeons = new List<Dungeon>();
+		public readonly List<Dungeon> clearedDungeons = new List<Dungeon>();*/
 		public readonly List<Warp> activeWarps = new List<Warp>();
+		public readonly List<Dungeon> dungeons = new List<Dungeon>();
 
 		public int spawnedDungeonsToday = 0;
 
@@ -33,18 +30,28 @@ namespace MiniDungeons
 		//private readonly string warpTarget = "SeedShopDungeon_1";
 
 
-		private IMonitor Monitor
-		{ 
-			get
-			{
-				return monitor;
-			}
+		public DungeonManager()
+		{
+
 		}
 
 
-		public DungeonManager(IMonitor monitor)
+		public void PopulateDungeonList(Dictionary<string, Data.Dungeon> dungeonData, Dictionary<string, Data.Challenge> challengeData)
 		{
-			this.monitor = monitor;
+			// TODO: Add the challenge list to the dungeon instead of just the data?
+			List<Challenge> challenges = new List<Challenge>();
+
+			foreach (var val in challengeData.Values)
+			{
+				Challenge challenge = new Challenge(val);
+				challenges.Add(challenge);
+			}
+
+			foreach (var kvp in dungeonData)
+			{
+				Dungeon dungeon = new Dungeon(kvp.Value, challengeData);
+				dungeons.Add(dungeon);
+			}
 		}
 
 
@@ -52,9 +59,13 @@ namespace MiniDungeons
 		{
 			spawnedDungeonsToday = 0;
 
-			testedDungeons.Clear();
+			/*testedDungeons.Clear();
 			activeDungeons.Clear();
-			clearedDungeons.Clear();
+			clearedDungeons.Clear();*/
+			foreach (var dungeon in dungeons)
+			{
+				dungeon.DayReset();
+			}
 		}
 
 
@@ -63,12 +74,9 @@ namespace MiniDungeons
 		/// </summary>
 		public void RemoveAddedLocations()
 		{
-			for (int i = 0; i < activeDungeons.Count; i++)
+			foreach (var dungeon in dungeons)
 			{
-				if (Game1.locations.Remove(activeDungeons[i]))
-				{
-					Monitor.Log($"Removed location {activeDungeons[i].Name} from the locations list", LogLevel.Debug);
-				}
+				dungeon.RemoveLocations();
 			}
 		}
 
@@ -83,42 +91,22 @@ namespace MiniDungeons
 			// TODO: Consider pattern matching (location is Dungeon dungeon) if the method isn't going to be any more complex
 			if (IsLocationMiniDungeon(e.NewLocation))
 			{
-				Dungeon dungeon = (Dungeon)e.NewLocation;
-				dungeon.Initialize();
-				Monitor.Log($"Warped to dungeon {dungeon.Name}, the challenge is {dungeon.challenge.ChallengeName}", LogLevel.Debug);
-			}
+				Dungeon? dungeon = GetDungeon(e.NewLocation as DungeonLocation);
 
-			// TODO: Clear the hardcoded map reference
-			if (clearedDungeons.Count > 0)
-			{
-				for (int i = 0; i < clearedDungeons.Count; i++)
+				if (dungeon is not null)
 				{
-					ClearWarps(clearedDungeons[i]);
-				}
+					dungeon.Initialize();
 
-				clearedDungeons.Clear();
+					// TODO: This check might blow up if the challenge name doesn't match the dictionary keys
+					string challengeName = dungeon.ChallengeName ?? "unknown challenge";
+					ModEntry.logMonitor.Log($"Initialized dungeon {dungeon.Name}, the challenge is {challengeName}", LogLevel.Debug);
+
+					ClearWarps(dungeon);
+				}
 			}
-
-
-			if (!CanSpawnDungeon())
+			else
 			{
-				return;
-			}
-
-			// TODO: Works only if the map has only 1 type of dungeon spawn enabled
-			if (TryGetDungeonData(e.NewLocation.Name, out DungeonData? data))
-			{
-				if (!CanSpawnDungeon(data.DungeonName))
-				{
-					return;
-				}
-
-				testedDungeons.Add(data.DungeonName);
-
-				if (Game1.random.NextDouble() < data.SpawnChance)
-				{
-					SpawnDungeonPortal(data, e.NewLocation);
-				}
+				TryToSpawnDungeon(e.NewLocation);
 			}
 		}
 
@@ -134,22 +122,57 @@ namespace MiniDungeons
 
 			if (currentDungeon is null)
 			{
-				Monitor.Log("The current dungeon is null for some reason", LogLevel.Error);
+				ModEntry.logMonitor.Log("The current dungeon is null for some reason", LogLevel.Error);
 				return;
 			}
 
 			currentDungeon.OnMonsterKilled(e.Removed.Where(x => x is Monster));
 
-			if (currentDungeon.cleared)
+			/*if (currentDungeon.cleared)
 			{
 				DungeonCleared(currentDungeon);
+			}*/
+		}
+
+
+		public void TryToSpawnDungeon(GameLocation location)
+		{
+			if (CanSpawnDungeon())
+			{
+				// TODO: Works only if the map has only 1 type of dungeon spawn enabled
+				if (TryGetDungeon(location.Name, out Dungeon? dungeon))
+				{
+					if (dungeon.TryToSpawnPortal())
+					{
+						SpawnDungeonPortal(dungeon, location);
+					}
+				}
 			}
+		}
+
+
+		public Dungeon? GetDungeon(DungeonLocation? location)
+		{
+			if (location is null)
+			{
+				return null;
+			}
+
+			foreach (var dungeon in dungeons)
+			{
+				if (dungeon.dungeonLocations.Contains(location))
+				{
+					return dungeon;
+				}
+			}
+
+			return null;
 		}
 
 
 		private bool CanSpawnDungeon()
 		{
-			if (spawnedDungeonsToday >= ModEntry.config.maxNumberOfDungeonsPerDay && ModEntry.config.maxNumberOfDungeonsPerDay != -1)
+			if (ModEntry.config.maxNumberOfDungeonsPerDay != -1 && spawnedDungeonsToday >= ModEntry.config.maxNumberOfDungeonsPerDay)
 			{
 				return false;
 			}
@@ -158,23 +181,27 @@ namespace MiniDungeons
 		}
 
 
-		private bool CanSpawnDungeon(string dungeonName)
+		/*public bool CanSpawnDungeonIn(string locationName)
 		{
-			if (testedDungeons.Contains(dungeonName))
+			if (!CanSpawnDungeon())
 			{
 				return false;
 			}
 
-			if (!DungeonSpawningEnabledForMap(dungeonName))
+			foreach (var val in dungeonData.Values)
 			{
-				return false;
+				if (val.SpawnMapName.Equals(locationName))
+				{
+					return true;
+				}
 			}
 
-			return true;
-		}
+			return false;
+		}*/
 
 
-		private bool DungeonSpawningEnabledForMap(string mapName)
+
+		public static bool DungeonSpawningEnabledForMap(string mapName)
 		{
 			// TODO: Remove hard coded dungeon names
 			return mapName switch
@@ -187,18 +214,18 @@ namespace MiniDungeons
 		}
 
 
-		private bool TryGetDungeonData(string? mapName, [NotNullWhen(true)] out DungeonData? data)
+		private bool TryGetDungeon(string? mapName, [NotNullWhen(true)] out Dungeon? dungeon)
 		{
-			foreach (var kvp in dungeonData)
+			for (int i = 0; i < dungeons.Count; i++)
 			{
-				if (kvp.Value.SpawnMapName.Equals(mapName))
+				if (dungeons[i].SpawnMapName.Equals(mapName))
 				{
-					data = kvp.Value;
+					dungeon = dungeons[i];
 					return true;
 				}
 			}
 
-			data = null;
+			dungeon = null;
 			return false;
 		}
 
@@ -210,7 +237,7 @@ namespace MiniDungeons
 				return false;
 			}
 
-			if (location is Dungeon)
+			if (location is DungeonLocation)
 			{
 				return true;
 			}
@@ -221,11 +248,11 @@ namespace MiniDungeons
 
 		public Dungeon? GetCurrentDungeon()
 		{
-			for (int i = 0; i < activeDungeons.Count; i++)
+			foreach (var dungeon in dungeons)
 			{
-				if (activeDungeons[i].Name.Equals(Game1.currentLocation.Name))
+				if (dungeon.CurrentDungeonLocation?.Equals(Game1.currentLocation) == true)
 				{
-					return activeDungeons[i];
+					return dungeon;
 				}
 			}
 
@@ -233,45 +260,12 @@ namespace MiniDungeons
 		}
 
 
-		private void SpawnDungeonPortal(DungeonData data, GameLocation location)
-		{
-			Dungeon? dungeon = MakeDungeon(data);
-
-			if (dungeon is null)
-			{
-				Monitor.Log($"Unknown dungeon name {data.DungeonName}", LogLevel.Error);
-				return;
-			}
-
-			// TODO: Test value for the warp, since custom locations might need something special to warp to
-			// We'll probably have to patch Game1.getLocationFromNameInLocationsList
-			// since just inserting the new locations to Game1.locations doesn't seem to be enough
-
-			Warp warp = new Warp(data.PortalX, data.PortalY, dungeon.Name, dungeon.mapType.EntryX, dungeon.mapType.EntryY, false);
-
-			location.warps.Add(warp);
-			activeWarps.Add(warp);
-
-			Monitor.Log($"Added warp to {location.Name} at ({data.PortalX} {data.PortalY}) targetting {dungeon.Name}", LogLevel.Debug);
-
-			activeDungeons.Add(dungeon);
-			spawnedDungeonsToday++;
-
-			if (ModEntry.config.enableHUDNotification)
-			{
-				Game1.addHUDMessage(new HUDMessage("A new portal has appeared!", HUDMessage.newQuest_type));
-			}
-
-			Game1.locations.Add(dungeon);
-		}
-
-
-		public Dungeon? MakeDungeon(DungeonData data)
+		/*public Dungeon? MakeDungeon(DungeonData data)
 		{
 			Dungeon? dungeon;
 			string mapName;
 
-			DungeonMap? map = PickMapType(data);
+			DungeonMapData? map = PickMapType(data);
 
 			if (map is null)
 			{
@@ -292,40 +286,44 @@ namespace MiniDungeons
 			}
 
 			return dungeon;
-		}
+		}*/
 
 
-		/// <summary>
-		/// Picks randomly from the weighted dungeon maps. From: https://stackoverflow.com/a/1761646
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		public DungeonMap? PickMapType(DungeonData data)
+		public void SpawnDungeonPortal(Dungeon dungeon, GameLocation location)
 		{
-			int sumOfWeights = 0;
+			/*Dungeon? dungeon = MakeDungeon(data);
 
-			for (int i = 0; i < data.DungeonMaps.Count; i++)
+			if (dungeon is null)
 			{
-				sumOfWeights += data.DungeonMaps[i].SpawnWeight;
+				ModEntry.logMonitor.Log($"Unknown dungeon name {data.DungeonName}", LogLevel.Error);
+				return;
+			}*/
+
+			DungeonLocation dungeonLocation = dungeon.CreateDungeonLocation();
+
+			// TODO: Test value for the warp, since custom locations might need something special to warp to
+			// We'll probably have to patch Game1.getLocationFromNameInLocationsList
+			// since just inserting the new locations to Game1.locations doesn't seem to be enough
+
+			Point entryPortalPoint = dungeon.EntryPortalPoint;
+			Point exitPortalPoint = dungeon.ExitPortalPoint;
+
+			Warp warp = new Warp(entryPortalPoint.X, entryPortalPoint.Y, dungeon.Name, exitPortalPoint.X, exitPortalPoint.Y, false);
+
+			location.warps.Add(warp);
+			activeWarps.Add(warp);
+
+			ModEntry.logMonitor.Log($"Added warp to {location.Name} at ({entryPortalPoint.X} {entryPortalPoint.Y}) targetting {dungeon.Name}", LogLevel.Debug);
+
+			//activeDungeons.Add(dungeon);
+			spawnedDungeonsToday++;
+
+			if (ModEntry.config.enableHUDNotification)
+			{
+				Game1.addHUDMessage(new HUDMessage("A new portal has appeared!", HUDMessage.newQuest_type));
 			}
 
-			int rand = Game1.random.Next(sumOfWeights);
-
-			for (int i = 0; i < data.DungeonMaps.Count; i++)
-			{
-				if (rand <= data.DungeonMaps[i].SpawnWeight)
-				{
-					return data.DungeonMaps[i];
-				}
-				else
-				{
-					rand -= data.DungeonMaps[i].SpawnWeight;
-				}
-			}
-
-			// It should never reach here, but let's log it just in case
-			Monitor.Log($"Something went wrong picking the dungeon map. The sum of the weights is {sumOfWeights}", LogLevel.Error);
-			return null;
+			Game1.locations.Add(dungeonLocation);
 		}
 
 
@@ -335,10 +333,7 @@ namespace MiniDungeons
 		/// </summary>
 		private void ClearWarps(Dungeon dungeon)
 		{
-
-			DungeonData data = dungeonData[dungeon.Name];
-
-			GameLocation location = Game1.getLocationFromName(data.SpawnMapName);
+			GameLocation location = Game1.getLocationFromName(dungeon.SpawnMapName);
 
 			if (location is not null)
 			{
@@ -346,22 +341,22 @@ namespace MiniDungeons
 			}
 			else
 			{
-				Monitor.Log($"Failed getting the location from dungeon data {dungeon.Name}", LogLevel.Error);
+				ModEntry.logMonitor.Log($"Failed getting the location from dungeon data {dungeon.Name}", LogLevel.Error);
 			}
 
 			activeWarps.Clear();
 		}
 
 
-		private void DungeonCleared(Dungeon currentDungeon)
+		/*private void DungeonCleared(Dungeon currentDungeon)
 		{
-			Monitor.Log($"Player cleared dungeon {currentDungeon.Name}!", LogLevel.Debug);
+			ModEntry.logMonitor.Log($"Player cleared dungeon {currentDungeon.Name}!", LogLevel.Debug);
 
 			Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
 
 			// TODO: Should we remove the dungeon from the active list?
 			// Maybe not, since that is used to clear the added locations before saving
 			clearedDungeons.Add(currentDungeon);
-		}
+		}*/
 	}
 }

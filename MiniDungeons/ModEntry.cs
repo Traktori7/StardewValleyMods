@@ -11,14 +11,14 @@ using StardewValley;
 using StardewValley.Monsters;
 using xTile;
 
-using MiniDungeons.Dungeons;
-
 
 namespace MiniDungeons
 {
 	/// <summary>The mod entry point.</summary>
 	public class ModEntry : Mod
 	{
+		internal static IMonitor logMonitor = null!;
+
 		private readonly string collectChallengeDataPath = Path.Combine("assets", "data", "CollectChallengeData.json");
 		private readonly string fightChallengeDataPath = Path.Combine("assets", "data", "FightChallengeData.json");
 		private readonly string dungeonDataPath = Path.Combine("assets", "data", "DungeonData.json");
@@ -34,12 +34,11 @@ namespace MiniDungeons
 		/// <param name="helper">Provides simplified APIs for writing mods.</param>
 		public override void Entry(IModHelper helper)
 		{
-			dungeonManager = new DungeonManager(Monitor);
+			logMonitor = Monitor;
 
 			config = helper.ReadConfig<ModConfig>();
 
-			dungeonManager.challengeData = ReadChallengeData();
-			dungeonManager.dungeonData = ReadDungeonData();
+			ReadData();
 
 			helper.Events.Content.AssetRequested += OnAssetRequested;
 			helper.Events.GameLoop.DayStarted += OnDayStarted;
@@ -157,16 +156,30 @@ namespace MiniDungeons
 		}
 
 
+		private void ReadData()
+		{
+			dungeonManager = new DungeonManager();
+
+			Dictionary<string, Data.Challenge> challengeData = ReadChallengeData();
+			Dictionary<string, Data.Dungeon> dungeonData = ReadDungeonData();
+
+			dungeonManager.PopulateDungeonList(dungeonData, challengeData);
+
+			//dungeonManager.challengeData = ReadChallengeData();
+			//dungeonManager.dungeonData = ReadDungeonData();
+		}
+
+
 		/// <summary>
 		/// Reads the challenge data json files
 		/// </summary>
 		/// <returns>Returns the dictionary of challenge data, or an empty one if the reading failed.</returns>
-		private Dictionary<string, Challenge> ReadChallengeData()
+		private Dictionary<string, Data.Challenge> ReadChallengeData()
 		{
-			var dict1 = ReadListToDict<FightChallenge>(fightChallengeDataPath, x => x.ChallengeName);
-			var dict2 = ReadListToDict<CollectChallenge>(collectChallengeDataPath, x => x.ChallengeName);
+			var dict1 = ReadListToDict<Data.Challenge>(fightChallengeDataPath, x => x.ChallengeName);
+			var dict2 = ReadListToDict<Data.Challenge>(collectChallengeDataPath, x => x.ChallengeName);
 
-			Dictionary<string, Challenge> challenges = new Dictionary<string, Challenge>();
+			Dictionary<string, Data.Challenge> challenges = new Dictionary<string, Data.Challenge>();
 
 			foreach (var kvp in dict1)
 			{
@@ -219,9 +232,9 @@ namespace MiniDungeons
 		/// Reads the dungeon data json
 		/// </summary>
 		/// <returns>Returns the dictionary of dungeon data, or an empty one if the reading failed.</returns>
-		private Dictionary<string, DungeonData> ReadDungeonData()
+		private Dictionary<string, Data.Dungeon> ReadDungeonData()
 		{
-			return ReadListToDict<DungeonData>(dungeonDataPath, x => x.DungeonName);
+			return ReadListToDict<Data.Dungeon>(dungeonDataPath, x => x.DungeonName);
 			/*try
 			{
 				List<DungeonData>? data = Helper.Data.ReadJsonFile<List<DungeonData>>(dungeonDataPath);
