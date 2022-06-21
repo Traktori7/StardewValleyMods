@@ -162,30 +162,6 @@ namespace MiniDungeons
 					interval: 0.01f
 				);
 			}
-
-			/*configMenu.AddBoolOption(
-				mod: ModManifest,
-				name: () => Helper.Translation.Get("gmcm.enable-pierre-label"),
-				tooltip: () => Helper.Translation.Get("gmcm.enable-pierre-description"),
-				getValue: () => config.enablePierrePortals,
-				setValue: (bool value) => config.enablePierrePortals = value
-			);
-
-			configMenu.AddBoolOption(
-				mod: ModManifest,
-				name: () => Helper.Translation.Get("gmcm.enable-joja-label"),
-				tooltip: () => Helper.Translation.Get("gmcm.enable-joja-description"),
-				getValue: () => config.enableJoJaPortals,
-				setValue: (bool value) => config.enableJoJaPortals = value
-			);
-
-			configMenu.AddBoolOption(
-				mod: ModManifest,
-				name: () => Helper.Translation.Get("gmcm.enable-yoba-label"),
-				tooltip: () => Helper.Translation.Get("gmcm.enable-yoba-description"),
-				getValue: () => config.enableYobaPortals,
-				setValue: (bool value) => config.enableYobaPortals = value
-			);*/
 		}
 
 

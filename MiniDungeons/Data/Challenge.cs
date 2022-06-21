@@ -18,7 +18,7 @@ namespace MiniDungeons.Data
 	{
 		public string ChallengeName { get; set; } = string.Empty;
 		public int Timer { get; set; }
-		public List<MonsterWave> MonsterWaves { get; set; } = new List<MonsterWave>();
+		public List<Wave> MonsterWaves { get; set; } = new List<Wave>();
 		public int TimerBeforeNextWaveSpawns { get; set; }
 		public List<Point> SpawnPoints { get; set; } = new List<Point>();
 		public List<SpawnedObject> SpawnedObjects { get; set; } = new List<SpawnedObject>();

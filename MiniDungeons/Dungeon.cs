@@ -15,9 +15,10 @@ namespace MiniDungeons
 {
 	internal class Dungeon
 	{
-		private int currentDungeonLocation = -1;
-		private int mapType = -1;
-		private DungeonState state = DungeonState.NONE;
+		private int currentDungeonLocation;
+		private int mapType;
+		private int wave;
+		private DungeonState state;
 
 		private readonly Data.Dungeon data;
 		private readonly Dictionary<string, Data.Challenge> challengeData;
@@ -45,6 +46,7 @@ namespace MiniDungeons
 		{
 			get { return data.DungeonName; }
 		}
+
 
 		public string? ChallengeName
 		{
@@ -82,7 +84,7 @@ namespace MiniDungeons
 		{
 			get
 			{
-				if (dungeonLocations.Count > currentDungeonLocation && currentDungeonLocation != -1)
+				if (currentDungeonLocation != -1 && dungeonLocations.Count > currentDungeonLocation)
 				{
 					return dungeonLocations[currentDungeonLocation];
 				}
@@ -98,9 +100,25 @@ namespace MiniDungeons
 		{
 			get
 			{
-				if (data.DungeonMaps.Count > mapType && mapType != -1)
+				if (mapType != -1 && data.DungeonMaps.Count > mapType)
 				{
 					return data.DungeonMaps[mapType];
+				}
+				else
+				{
+					return null;
+				}
+			}
+		}
+
+
+		public Wave? CurrentWave
+		{
+			get
+			{
+				if (Challenge is not null && wave != -1 && Challenge.MonsterWaves.Count > wave)
+				{
+					return Challenge.MonsterWaves[wave];
 				}
 				else
 				{
@@ -151,7 +169,16 @@ namespace MiniDungeons
 			this.data = data;
 			this.challengeData = challengeData;
 
-			//CreateDungeonLocation(data.DungeonName);
+			ResetResetableFields();
+		}
+
+
+		private void ResetResetableFields()
+		{
+			state = DungeonState.NONE;
+			mapType = -1;
+			currentDungeonLocation = -1;
+			wave = -1;
 		}
 
 
@@ -192,7 +219,6 @@ namespace MiniDungeons
 				{
 					mapType = i;
 					return;
-					//return data.DungeonMaps[i];
 				}
 				else
 				{
@@ -202,7 +228,6 @@ namespace MiniDungeons
 
 			// It should never reach here, but let's log it just in case
 			ModEntry.logMonitor.Log($"Something went wrong picking the dungeon map. The sum of the weights is {sumOfWeights}", LogLevel.Error);
-			//return null;
 		}
 
 
@@ -220,9 +245,8 @@ namespace MiniDungeons
 
 		public void DayReset()
 		{
-			state = DungeonState.NONE;
-			mapType = -1;
-			currentDungeonLocation = -1;
+			ResetResetableFields();
+
 			dungeonLocations.Clear();
 		}
 
@@ -230,35 +254,47 @@ namespace MiniDungeons
 		public virtual void Initialize()
 		{
 			Data.Challenge? currentChallenge = Challenge;
+			//wave = 0;
 
 			if (currentChallenge is null)
 			{
 				return;
 			}
 
-			for (int i = 0; i < currentChallenge.MonsterWaves.Count; i++)
-			{
-				// TODO: Add wave control and timers
-				MonsterWave wave = currentChallenge.MonsterWaves[i];
+			SpawnNextWave(currentChallenge);
+		}
 
-				for (int j = 0; j < wave.Monsters.Count; j++)
+
+		private void SpawnMonsters(Data.Challenge challenge)
+		{
+			// TODO: Add wave control and timers
+			//MonsterWave monsterWave = CurrentWave;
+
+			if (CurrentWave is not null)
+			{
+				for (int j = 0; j < CurrentWave.Monsters.Count; j++)
 				{
-					MonsterSpawn waveSpawn = wave.Monsters[j];
+					MonsterSpawn waveSpawn = CurrentWave.Monsters[j];
 
 					for (int k = 0; k < waveSpawn.SpawnAmount; k++)
 					{
-						Point point = PickSpawnPoint(currentChallenge.SpawnPoints);
+						Point point = PickSpawnPoint(challenge.SpawnPoints);
 
 						SpawnMonster(waveSpawn.MonsterName, point);
 					}
 				}
 			}
-			// TODO: SpawnedObject.Count vs SpawnPoints.Count + randomly picking the points
-			for (int i = 0; i < currentChallenge.SpawnedObjects.Count; i++)
-			{
-				SpawnedObject obj = currentChallenge.SpawnedObjects[i];
+		}
 
-				Point point = currentChallenge.SpawnPoints[i];
+
+		private void SpawnObjects(Data.Challenge challenge)
+		{
+			// TODO: SpawnedObject.Count vs SpawnPoints.Count + randomly picking the points
+			for (int i = 0; i < challenge.SpawnedObjects.Count; i++)
+			{
+				SpawnedObject obj = challenge.SpawnedObjects[i];
+
+				Point point = challenge.SpawnPoints[i];
 
 				CurrentDungeonLocation?.objects.Add(new Vector2(point.X, point.Y), new StardewValley.Object(obj.ObjectID, 1));
 			}
@@ -328,13 +364,20 @@ namespace MiniDungeons
 			// This tries to test if all of the monsters have been killed, the player should still be in the location
 			if (CurrentDungeonLocation?.characters.Any(c => c is Monster) == false)
 			{
-				state = DungeonState.DUNGEON_CLEARED;
-
-				ModEntry.logMonitor.Log($"Player cleared dungeon {Name}!", LogLevel.Debug);
-
-				if (ModEntry.config.enableHUDNotification)
+				if (!IsFinalWave())
 				{
-					Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
+					SpawnNextWave(Challenge);
+				}
+				else
+				{
+					state = DungeonState.DUNGEON_CLEARED;
+
+					ModEntry.logMonitor.Log($"Player cleared dungeon {Name}!", LogLevel.Debug);
+
+					if (ModEntry.config.enableHUDNotification)
+					{
+						Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
+					}
 				}
 			}
 		}
@@ -345,6 +388,33 @@ namespace MiniDungeons
 			int rand = Game1.random.Next(points.Count);
 
 			return points[rand];
+		}
+
+
+		private bool IsFinalWave()
+		{
+			if (Challenge is null)
+			{
+				return false;
+			}
+
+			return wave >= Challenge.MonsterWaves.Count - 1;
+		}
+
+
+		private void SpawnNextWave(Data.Challenge? challenge)
+		{
+			if (challenge is null)
+			{
+				ModEntry.logMonitor.Log("Challenge was null when trying to create the next wave", LogLevel.Error);
+				return;
+			}
+
+			wave++;
+			ModEntry.logMonitor.Log($"Spawning wave {wave}", LogLevel.Debug);
+
+			SpawnMonsters(challenge);
+			SpawnObjects(challenge);
 		}
 	}
 

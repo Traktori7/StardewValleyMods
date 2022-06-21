@@ -3,7 +3,7 @@
 
 namespace MiniDungeons.Data
 {
-	internal class MonsterWave
+	internal class Wave
 	{
 		public List<MonsterSpawn> Monsters { get; set; } = new List<MonsterSpawn>();
 	}
