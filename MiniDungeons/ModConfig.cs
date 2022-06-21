@@ -1,11 +1,13 @@
-﻿namespace MiniDungeons
+﻿using System.Collections.Generic;
+
+
+namespace MiniDungeons
 {
 	internal class ModConfig
 	{
 		public bool enableHUDNotification = true;
 		public int maxNumberOfDungeonsPerDay = 1;
-		public bool enablePierrePortals = true;
-		public bool enableJoJaPortals = true;
-		public bool enableYobaPortals = true;
+		public Dictionary<string, bool> enabledDungeons = new Dictionary<string, bool>();
+		public Dictionary<string, float> dungeonSpawnChances = new Dictionary<string, float>();
 	}
 }

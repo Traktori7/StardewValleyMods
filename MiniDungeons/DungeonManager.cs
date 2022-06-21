@@ -41,15 +41,15 @@ namespace MiniDungeons
 			// TODO: Add the challenge list to the dungeon instead of just the data?
 			List<Challenge> challenges = new List<Challenge>();
 
-			foreach (var val in challengeData.Values)
+			foreach (Data.Challenge val in challengeData.Values)
 			{
 				Challenge challenge = new Challenge(val);
 				challenges.Add(challenge);
 			}
 
-			foreach (var kvp in dungeonData)
+			foreach (Data.Dungeon val in dungeonData.Values)
 			{
-				Dungeon dungeon = new Dungeon(kvp.Value, challengeData);
+				Dungeon dungeon = new Dungeon(val, challengeData);
 				dungeons.Add(dungeon);
 			}
 		}
@@ -62,7 +62,7 @@ namespace MiniDungeons
 			/*testedDungeons.Clear();
 			activeDungeons.Clear();
 			clearedDungeons.Clear();*/
-			foreach (var dungeon in dungeons)
+			foreach (Dungeon dungeon in dungeons)
 			{
 				dungeon.DayReset();
 			}
@@ -74,7 +74,7 @@ namespace MiniDungeons
 		/// </summary>
 		public void RemoveAddedLocations()
 		{
-			foreach (var dungeon in dungeons)
+			foreach (Dungeon dungeon in dungeons)
 			{
 				dungeon.RemoveLocations();
 			}
@@ -108,6 +108,11 @@ namespace MiniDungeons
 			{
 				TryToSpawnDungeon(e.NewLocation);
 			}
+
+			if (TryGetPortalWarp(e.NewLocation, out Warp? warp))
+			{
+				SpawnPortalSprite(e.NewLocation, warp);
+			}
 		}
 
 
@@ -127,11 +132,6 @@ namespace MiniDungeons
 			}
 
 			currentDungeon.OnMonsterKilled(e.Removed.Where(x => x is Monster));
-
-			/*if (currentDungeon.cleared)
-			{
-				DungeonCleared(currentDungeon);
-			}*/
 		}
 
 
@@ -158,7 +158,7 @@ namespace MiniDungeons
 				return null;
 			}
 
-			foreach (var dungeon in dungeons)
+			foreach (Dungeon dungeon in dungeons)
 			{
 				if (dungeon.dungeonLocations.Contains(location))
 				{
@@ -201,16 +201,24 @@ namespace MiniDungeons
 
 
 
-		public static bool DungeonSpawningEnabledForMap(string mapName)
+		public static bool DungeonSpawningEnabledForDungeon(string dungeonName)
 		{
+			if (ModEntry.config.enabledDungeons.TryGetValue(dungeonName, out bool enabled))
+			{
+				return enabled;
+			}
+			else
+			{
+				return false;
+			}
 			// TODO: Remove hard coded dungeon names
-			return mapName switch
+			/*return dungeonName switch
 			{
 				"JojaMartDungeon" => ModEntry.config.enableJoJaPortals,
 				"SeedShopDungeon" => ModEntry.config.enablePierrePortals,
 				"YobaDungeon" => ModEntry.config.enableYobaPortals,
 				_ => false,
-			};
+			};*/
 		}
 
 
@@ -248,7 +256,7 @@ namespace MiniDungeons
 
 		public Dungeon? GetCurrentDungeon()
 		{
-			foreach (var dungeon in dungeons)
+			foreach (Dungeon dungeon in dungeons)
 			{
 				if (dungeon.CurrentDungeonLocation?.Equals(Game1.currentLocation) == true)
 				{
@@ -291,29 +299,22 @@ namespace MiniDungeons
 
 		public void SpawnDungeonPortal(Dungeon dungeon, GameLocation location)
 		{
-			/*Dungeon? dungeon = MakeDungeon(data);
-
-			if (dungeon is null)
-			{
-				ModEntry.logMonitor.Log($"Unknown dungeon name {data.DungeonName}", LogLevel.Error);
-				return;
-			}*/
-
 			DungeonLocation dungeonLocation = dungeon.CreateDungeonLocation();
 
 			// TODO: Test value for the warp, since custom locations might need something special to warp to
 			// We'll probably have to patch Game1.getLocationFromNameInLocationsList
 			// since just inserting the new locations to Game1.locations doesn't seem to be enough
+			// But it seems to work so far...
 
 			Point entryPortalPoint = dungeon.EntryPortalPoint;
 			Point exitPortalPoint = dungeon.ExitPortalPoint;
 
-			Warp warp = new Warp(entryPortalPoint.X, entryPortalPoint.Y, dungeon.Name, exitPortalPoint.X, exitPortalPoint.Y, false);
+			Warp warp = new Warp(entryPortalPoint.X, entryPortalPoint.Y, dungeonLocation.Name, exitPortalPoint.X, exitPortalPoint.Y, false);
 
 			location.warps.Add(warp);
 			activeWarps.Add(warp);
 
-			ModEntry.logMonitor.Log($"Added warp to {location.Name} at ({entryPortalPoint.X} {entryPortalPoint.Y}) targetting {dungeon.Name}", LogLevel.Debug);
+			ModEntry.logMonitor.Log($"Added warp to {location.Name} at ({entryPortalPoint.X} {entryPortalPoint.Y}) targetting {dungeonLocation.Name}", LogLevel.Debug);
 
 			//activeDungeons.Add(dungeon);
 			spawnedDungeonsToday++;
@@ -358,5 +359,46 @@ namespace MiniDungeons
 			// Maybe not, since that is used to clear the added locations before saving
 			clearedDungeons.Add(currentDungeon);
 		}*/
+
+
+		private static bool TryGetPortalWarp(GameLocation location, [NotNullWhen(true)] out Warp? warp)
+		{
+			foreach (var item in location.warps)
+			{
+				if (item.TargetName.StartsWith(ModEntry.modIDPrefix))
+				{
+					warp = item;
+					return true;
+				}
+			}
+
+			warp = null;
+			return false;
+		}
+
+
+		private static void SpawnPortalSprite(GameLocation location, Warp warp)
+		{
+			int sizeCorrectionMultiplier = 4;
+			float animationIntervalInMillisecond = 1000f;
+			int animationLenght = 4;
+			int loops = 1000000000;
+			// Y-coordinate needs to be 1 less that the portal position, OR change the portal to be 1x1?
+			Vector2 portalPosition = new Vector2(warp.X, warp.Y - 1) * 64f;
+
+			TemporaryAnimatedSprite sprite = new TemporaryAnimatedSprite(ModEntry.portalAssetName,
+				new Rectangle(0, 0, 16, 32),
+				animationIntervalInMillisecond,
+				animationLenght,
+				loops,
+				portalPosition,
+				false,
+				false)
+			{
+				scale = sizeCorrectionMultiplier
+			};
+
+			location.temporarySprites.Add(sprite);
+		}
 	}
 }

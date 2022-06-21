@@ -17,17 +17,11 @@ namespace MiniDungeons
 	{
 		private int currentDungeonLocation = -1;
 		private int mapType = -1;
+		private DungeonState state = DungeonState.NONE;
 
 		private readonly Data.Dungeon data;
 		private readonly Dictionary<string, Data.Challenge> challengeData;
 
-		//public bool cleared;
-		//public readonly string name;
-		//public readonly string spawnMapName;
-		private DungeonState state = DungeonState.NONE;
-		//public DungeonMap mapType;
-		//public Challenge challenge;
-		//public readonly List<DungeonMap> dungeonMaps;
 		public readonly List<DungeonLocation> dungeonLocations = new List<DungeonLocation>();
 
 		/*public ReadOnlySpan<char> NameWithoutEnding
@@ -197,6 +191,7 @@ namespace MiniDungeons
 				if (rand <= data.DungeonMaps[i].SpawnWeight)
 				{
 					mapType = i;
+					return;
 					//return data.DungeonMaps[i];
 				}
 				else
@@ -243,7 +238,7 @@ namespace MiniDungeons
 
 			for (int i = 0; i < currentChallenge.MonsterWaves.Count; i++)
 			{
-				// TODO: UnHardoce this. Activator.CreateInstance or something
+				// TODO: Add wave control and timers
 				MonsterWave wave = currentChallenge.MonsterWaves[i];
 
 				for (int j = 0; j < wave.Monsters.Count; j++)
@@ -254,15 +249,7 @@ namespace MiniDungeons
 					{
 						Point point = PickSpawnPoint(currentChallenge.SpawnPoints);
 
-						switch (waveSpawn.MonsterName)
-						{
-							case "GreenSlime":
-								GreenSlime slime = new GreenSlime(new Vector2(point.X, point.Y) * 64f);
-								CurrentDungeonLocation?.characters.Add(slime);
-								break;
-							default:
-								break;
-						}
+						SpawnMonster(waveSpawn.MonsterName, point);
 					}
 				}
 			}
@@ -287,7 +274,6 @@ namespace MiniDungeons
 				if (Game1.random.NextDouble() < SpawnChance)
 				{
 					state = DungeonState.DUNGEON_SPAWNED;
-					//SpawnDungeonPortal(location);
 
 					return true;
 				}
@@ -304,12 +290,36 @@ namespace MiniDungeons
 				return false;
 			}
 
-			if (!DungeonManager.DungeonSpawningEnabledForMap(data.SpawnMapName))
+			if (!DungeonManager.DungeonSpawningEnabledForDungeon(Name))
 			{
 				return false;
 			}
 
 			return true;
+		}
+
+
+		private Monster? SpawnMonster(string monsterName, Point point)
+		{
+			Monster? monster = null;
+
+			// TODO: Does this need unhardcodifying? Activator.CreateInstance or something? Or just SMAPI reflection/AccessTools?
+			switch (monsterName)
+			{
+				case "GreenSlime":
+					monster = new GreenSlime(new Vector2(point.X, point.Y) * 64f);
+					break;
+				default:
+					ModEntry.logMonitor.Log($"Trying to spawn an unkown monster type {monsterName} at {point}", LogLevel.Error);
+					break;
+			}
+
+			if (monster is not null)
+			{
+				CurrentDungeonLocation?.characters.Add(monster);
+			}
+			
+			return monster;
 		}
 
 

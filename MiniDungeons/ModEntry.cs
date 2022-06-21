@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
@@ -18,9 +18,12 @@ namespace MiniDungeons
 	public class ModEntry : Mod
 	{
 		internal static IMonitor logMonitor = null!;
+		internal static ITranslationHelper i18n = null!;
 
-		private readonly string collectChallengeDataPath = Path.Combine("assets", "data", "CollectChallengeData.json");
-		private readonly string fightChallengeDataPath = Path.Combine("assets", "data", "FightChallengeData.json");
+		public static readonly string portalAssetName = PathUtilities.NormalizeAssetName("Traktori.MiniDungeons/PortalSprite");
+
+		private readonly string portalSpritePath = Path.Combine("assets", "PortalSprite.png");
+		private readonly string challengeDataPath = Path.Combine("assets", "data", "ChallengeData.json");
 		private readonly string dungeonDataPath = Path.Combine("assets", "data", "DungeonData.json");
 		//private readonly string seedShopDungeonMap = "Maps/SeedShopDungeon_1";
 
@@ -35,10 +38,11 @@ namespace MiniDungeons
 		public override void Entry(IModHelper helper)
 		{
 			logMonitor = Monitor;
-
-			config = helper.ReadConfig<ModConfig>();
+			i18n = helper.Translation;
 
 			ReadData();
+
+			config = helper.ReadConfig<ModConfig>();
 
 			helper.Events.Content.AssetRequested += OnAssetRequested;
 			helper.Events.GameLoop.DayStarted += OnDayStarted;
@@ -54,6 +58,10 @@ namespace MiniDungeons
 			if (e.Name.StartsWith(Path.Combine("Maps", modIDPrefix)))
 			{
 				e.LoadFromModFile<Map>("assets/maps/SeedShop/SeedShop.tmx", AssetLoadPriority.Low);
+			}
+			else if (e.Name.IsEquivalentTo(portalAssetName))
+			{
+				e.LoadFromModFile<Texture2D>(portalSpritePath, AssetLoadPriority.Low);
 			}
 		}
 
@@ -107,6 +115,8 @@ namespace MiniDungeons
 		/// <param name="configMenu"></param>
 		private void RegisterConfigMenu(IGenericModConfigMenuApi configMenu)
 		{
+			InitializeConfig();
+
 			configMenu.Register(
 				mod: ModManifest,
 				reset: () => config = new ModConfig(),
@@ -115,22 +125,45 @@ namespace MiniDungeons
 
 			configMenu.AddBoolOption(
 				mod: ModManifest,
-				name: () => Helper.Translation.Get("gmcm.enable-notification-label"),
-				tooltip: () => Helper.Translation.Get("gmcm.enable-notification-description"),
+				name: () => i18n.Get("gmcm.enable-notification-label"),
+				tooltip: () => i18n.Get("gmcm.enable-notification-description"),
 				getValue: () => config.enableHUDNotification,
 				setValue: (bool value) => config.enableHUDNotification = value
 			);
 
 			configMenu.AddNumberOption(
 				mod: ModManifest,
-				name: () => Helper.Translation.Get("gmcm.dungeon-limit-label"),
-				tooltip: () => Helper.Translation.Get("gmcm.dungeon-limit-description"),
+				name: () => i18n.Get("gmcm.dungeon-limit-label"),
+				tooltip: () => i18n.Get("gmcm.dungeon-limit-description"),
 				getValue: () => config.maxNumberOfDungeonsPerDay,
 				setValue: (int value) => config.maxNumberOfDungeonsPerDay = value,
 				min: -1
 			);
 
-			configMenu.AddBoolOption(
+			// TODO: This doesn't seem to work at all
+			foreach (Dungeon dungeon in dungeonManager.dungeons)
+			{
+				configMenu.AddBoolOption(
+					mod: ModManifest,
+					name: () => i18n.Get("gmcm.enable-dungeon-label", new {dungeonName = dungeon.Name}),
+					tooltip: () => i18n.Get("gmcm.enable-dungeon-description", new { dungeonName = dungeon.Name }),
+					getValue: () => config.enabledDungeons[dungeon.Name],
+					setValue: (bool value) => config.enabledDungeons[dungeon.Name] = value
+				);
+
+				configMenu.AddNumberOption(
+					mod: ModManifest,
+					name: () => i18n.Get("gmcm.dungeon-spawn-chance-label", new { dungeonName = dungeon.Name }),
+					tooltip: () => i18n.Get("gmcm.dungeon-spawn-chance-description", new { dungeonName = dungeon.Name, defaultChance = dungeon.SpawnChance }),
+					getValue: () => config.dungeonSpawnChances[dungeon.Name],
+					setValue: (float value) => config.dungeonSpawnChances[dungeon.Name] = value,
+					min: 0f,
+					max: 1f,
+					interval: 0.01f
+				);
+			}
+
+			/*configMenu.AddBoolOption(
 				mod: ModManifest,
 				name: () => Helper.Translation.Get("gmcm.enable-pierre-label"),
 				tooltip: () => Helper.Translation.Get("gmcm.enable-pierre-description"),
@@ -152,7 +185,49 @@ namespace MiniDungeons
 				tooltip: () => Helper.Translation.Get("gmcm.enable-yoba-description"),
 				getValue: () => config.enableYobaPortals,
 				setValue: (bool value) => config.enableYobaPortals = value
-			);
+			);*/
+		}
+
+
+		private void InitializeConfig()
+		{
+			// Makes sure the dictionaries don't contain any old keys, but keeps the old values
+			Dictionary<string, bool> temp1 = config.enabledDungeons;
+			Dictionary<string, float> temp2 = config.dungeonSpawnChances;
+
+			config.enabledDungeons.Clear();
+			config.dungeonSpawnChances.Clear();
+
+			// Initialize with only the values for the currently loaded dungeons
+			foreach (Dungeon dungeon in dungeonManager.dungeons)
+			{
+				if (!config.enabledDungeons.ContainsKey(dungeon.Name))
+				{
+					config.enabledDungeons[dungeon.Name] = true;
+				}
+				
+				if (!config.dungeonSpawnChances.ContainsKey(dungeon.Name))
+				{
+					config.dungeonSpawnChances[dungeon.Name] = dungeon.SpawnChance;
+				}
+			}
+
+			// Overwrite with the old values
+			foreach (var item in temp1)
+			{
+				if (config.enabledDungeons.ContainsKey(item.Key))
+				{
+					config.enabledDungeons[item.Key] = item.Value;
+				}
+			}
+
+			foreach (var item in temp2)
+			{
+				if (config.dungeonSpawnChances.ContainsKey(item.Key))
+				{
+					config.dungeonSpawnChances[item.Key] = item.Value;
+				}
+			}
 		}
 
 
@@ -164,9 +239,6 @@ namespace MiniDungeons
 			Dictionary<string, Data.Dungeon> dungeonData = ReadDungeonData();
 
 			dungeonManager.PopulateDungeonList(dungeonData, challengeData);
-
-			//dungeonManager.challengeData = ReadChallengeData();
-			//dungeonManager.dungeonData = ReadDungeonData();
 		}
 
 
@@ -176,55 +248,7 @@ namespace MiniDungeons
 		/// <returns>Returns the dictionary of challenge data, or an empty one if the reading failed.</returns>
 		private Dictionary<string, Data.Challenge> ReadChallengeData()
 		{
-			var dict1 = ReadListToDict<Data.Challenge>(fightChallengeDataPath, x => x.ChallengeName);
-			var dict2 = ReadListToDict<Data.Challenge>(collectChallengeDataPath, x => x.ChallengeName);
-
-			Dictionary<string, Data.Challenge> challenges = new Dictionary<string, Data.Challenge>();
-
-			foreach (var kvp in dict1)
-			{
-				challenges[kvp.Key] = kvp.Value;
-			}
-
-			foreach (var kvp in dict2)
-			{
-				challenges[kvp.Key] = kvp.Value;
-			}
-
-			return challenges;
-
-			// Combines the 2 dictionaries, From: https://stackoverflow.com/a/53450763
-			//return dict1.Concat(dict2).GroupBy(k => k.Key).ToDictionary(k => k.Key, v => v.First().Value);
-
-			/*try
-			{
-				List<FightChallenge>? data = Helper.Data.ReadJsonFile<List<FightChallenge>>(fightChallengeDataPath);
-				List<CollectChallenge>? data2 = Helper.Data.ReadJsonFile<List<CollectChallenge>>(collectChallengeDataPath);
-
-				if (data is not null)
-				{
-					return data.ToDictionary(x => x.ChallengeName, x => (Challenge)x);
-
-					Dictionary<string, Challenge> dictionary = new Dictionary<string, Challenge>();
-
-					for (int i = 0; i < data.Count; i++)
-					{
-						dictionary[data[i].ChallengeName] = data[i];
-					}
-
-					return dictionary;
-				}
-				else
-				{
-					Monitor.Log("Reading the dungeon data failed", LogLevel.Error);
-				}
-			}
-			catch (Exception ex)
-			{
-				Monitor.Log(ex.ToString(), LogLevel.Error);
-			}
-
-			return new Dictionary<string, Challenge>();*/
+			return ReadListToDict<Data.Challenge>(challengeDataPath, x => x.ChallengeName);
 		}
 
 
@@ -235,25 +259,6 @@ namespace MiniDungeons
 		private Dictionary<string, Data.Dungeon> ReadDungeonData()
 		{
 			return ReadListToDict<Data.Dungeon>(dungeonDataPath, x => x.DungeonName);
-			/*try
-			{
-				List<DungeonData>? data = Helper.Data.ReadJsonFile<List<DungeonData>>(dungeonDataPath);
-
-				if (data is not null)
-				{
-					return data.ToDictionary(x => x.DungeonName);
-				}
-				else
-				{
-					Monitor.Log("Reading the dungeon data failed", LogLevel.Error);
-				}
-			}
-			catch (Exception ex)
-			{
-				Monitor.Log(ex.ToString(), LogLevel.Error);
-			}
-
-			return new Dictionary<string, DungeonData>();*/
 		}
 
 

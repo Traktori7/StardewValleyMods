@@ -1,16 +1,12 @@
 {
 	// GenericModConfigMenu
 	"gmcm.main-label": "Config options for Mini Dungeons",
-	"gmcm.enable-notification-label": "Enable notifications of new portals",
-	"gmcm.enable-notification-description": "Shows a HUD message when entering a map where a new portal spawns",
+	"gmcm.enable-notification-label": "Enable HUD notifications",
+	"gmcm.enable-notification-description": "Show a HUD message when a portal spawns or the dungeon is cleared.",
 	"gmcm.dungeon-limit-label": "Max number of dungeon portals per day",
-	"gmcm.dungeon-limit-description": "Max number of spawned dungeon portals per day",
-	"gmcm.enable-dungeon-label": "Enable portals in {dungeonSpawnMapName}",
-	"gmcm.enable-dungeon-description": "Allows spawning portals in {dungeonSpawnMapName}",
-	"gmcm.enable-pierre-label": "Enable portals in Pierre's shop",
-	"gmcm.enable-pierre-description": "Allows spawning portals in Pierre's shop",
-	"gmcm.enable-joja-label": "Enable portals in JojaMart",
-	"gmcm.enable-joja-description": "Allows spawning portals in JojaMart",
-	"gmcm.enable-yoba-label": "Enable portals near the Yoba shrine",
-	"gmcm.enable-yoba-description": "Allows spawning portals near the Yoba shrine"
+	"gmcm.dungeon-limit-description": "Max number of spawned dungeon portals per day, -1 for no limit.",
+	"gmcm.enable-dungeon-label": "Enable dungeon {{dungeonName}}",
+	"gmcm.enable-dungeon-description": "Allows spawning the portal for dungeon {{dungeonName}}.",
+	"gmcm.dungeon-spawn-chance-label": "Dungeon {{dungeonName}} spawn chance",
+	"gmcm.dungeon-spawn-chance-description": "Dungeon {{dungeonName}} spawn chance, default: {{defaultChance}}."
 }
