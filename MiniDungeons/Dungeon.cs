@@ -9,6 +9,7 @@ using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Monsters;
+using SObject = StardewValley.Object;
 using TraktoriShared.Utils;
 
 
@@ -423,7 +424,37 @@ namespace MiniDungeons
 				Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
 			}
 
-			ItemHelper.PlacePickableItem(CurrentDungeonLocation, new Point(6, 23), "Large Milk");
+			//System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+			//long nanoSecondsPerTick = (1000L * 1000L * 1000L) / System.Diagnostics.Stopwatch.Frequency;
+
+			//stopwatch.Start();
+
+			//int id = ItemHelper.GetIDFromObjectName("Large Milk");
+			Item item = ItemHelper.GetItemFromQualifiedItemID("Large Milk");
+			//Item item = ItemHelper.GetItemFromQualifiedItemID("(W)Rusty Sword");
+
+			//stopwatch.Stop();
+			//ModEntry.logMonitor.Log($"Getting the item took {stopwatch.ElapsedTicks * nanoSecondsPerTick / 1000} μs", LogLevel.Debug);
+
+			//stopwatch.Restart();
+
+			//int id = ItemHelper.GetIDFromObjectName("Glow Ring");
+
+			//stopwatch.Stop();
+			//ModEntry.logMonitor.Log($"Getting the id {id} took {stopwatch.ElapsedTicks * nanoSecondsPerTick / 1000} μs", LogLevel.Debug);
+
+			//ItemHelper.PlacePickableItem(CurrentDungeonLocation, new Point(6, 23), id);
+
+			// TODO: Add the reward to an unbreakable chest
+			if (item is SObject obj)
+			{
+				ItemHelper.PlacePickableItem(CurrentDungeonLocation, new Point(6, 23), obj);
+			}
+			else
+			{
+				Game1.player.holdUpItemThenMessage(item);
+				Game1.player.addItemToInventoryBool(item);
+			}
 		}
 	}
 
