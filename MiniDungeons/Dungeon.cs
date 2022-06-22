@@ -9,6 +9,7 @@ using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Monsters;
+using TraktoriShared.Utils;
 
 
 namespace MiniDungeons
@@ -296,7 +297,7 @@ namespace MiniDungeons
 
 				Point point = challenge.SpawnPoints[i];
 
-				CurrentDungeonLocation?.objects.Add(new Vector2(point.X, point.Y), new StardewValley.Object(obj.ObjectID, 1));
+				ItemHelper.PlacePickableItem(CurrentDungeonLocation, point, obj.ObjectID);
 			}
 		}
 
@@ -370,14 +371,7 @@ namespace MiniDungeons
 				}
 				else
 				{
-					state = DungeonState.DUNGEON_CLEARED;
-
-					ModEntry.logMonitor.Log($"Player cleared dungeon {Name}!", LogLevel.Debug);
-
-					if (ModEntry.config.enableHUDNotification)
-					{
-						Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
-					}
+					DungeonCleared();
 				}
 			}
 		}
@@ -415,6 +409,21 @@ namespace MiniDungeons
 
 			SpawnMonsters(challenge);
 			SpawnObjects(challenge);
+		}
+
+
+		private void DungeonCleared()
+		{
+			state = DungeonState.DUNGEON_CLEARED;
+
+			ModEntry.logMonitor.Log($"Player cleared dungeon {Name}!", LogLevel.Debug);
+
+			if (ModEntry.config.enableHUDNotification)
+			{
+				Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
+			}
+
+			ItemHelper.PlacePickableItem(CurrentDungeonLocation, new Point(6, 23), "Large Milk");
 		}
 	}
 

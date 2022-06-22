@@ -15,19 +15,10 @@ namespace MiniDungeons
 {
 	internal class DungeonManager
 	{
-		//public Dictionary<string, DungeonData> dungeonData = null!;
-		//public Dictionary<string, Challenge> challengeData = null!;
-
-		/*public readonly List<string> testedDungeons = new List<string>();
-		public readonly List<Dungeon> activeDungeons = new List<Dungeon>();
-		public readonly List<Dungeon> clearedDungeons = new List<Dungeon>();*/
 		public readonly List<Warp> activeWarps = new List<Warp>();
 		public readonly List<Dungeon> dungeons = new List<Dungeon>();
 
 		public int spawnedDungeonsToday = 0;
-
-
-		//private readonly string warpTarget = "SeedShopDungeon_1";
 
 
 		public DungeonManager()
@@ -59,9 +50,6 @@ namespace MiniDungeons
 		{
 			spawnedDungeonsToday = 0;
 
-			/*testedDungeons.Clear();
-			activeDungeons.Clear();
-			clearedDungeons.Clear();*/
 			foreach (Dungeon dungeon in dungeons)
 			{
 				dungeon.DayReset();
@@ -179,26 +167,6 @@ namespace MiniDungeons
 
 			return true;
 		}
-
-
-		/*public bool CanSpawnDungeonIn(string locationName)
-		{
-			if (!CanSpawnDungeon())
-			{
-				return false;
-			}
-
-			foreach (var val in dungeonData.Values)
-			{
-				if (val.SpawnMapName.Equals(locationName))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}*/
-
 
 
 		public static bool DungeonSpawningEnabledForDungeon(string dungeonName)
@@ -347,18 +315,6 @@ namespace MiniDungeons
 
 			activeWarps.Clear();
 		}
-
-
-		/*private void DungeonCleared(Dungeon currentDungeon)
-		{
-			ModEntry.logMonitor.Log($"Player cleared dungeon {currentDungeon.Name}!", LogLevel.Debug);
-
-			Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
-
-			// TODO: Should we remove the dungeon from the active list?
-			// Maybe not, since that is used to clear the added locations before saving
-			clearedDungeons.Add(currentDungeon);
-		}*/
 
 
 		private static bool TryGetPortalWarp(GameLocation location, [NotNullWhen(true)] out Warp? warp)
