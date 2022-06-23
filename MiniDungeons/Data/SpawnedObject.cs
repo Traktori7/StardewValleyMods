@@ -2,7 +2,7 @@
 {
 	internal class SpawnedObject
 	{
-		public int ObjectID { get; set; }
+		public string ObjectID { get; set; } = string.Empty;
 		public int SpawnedAmount { get; set; }
 	}
 }

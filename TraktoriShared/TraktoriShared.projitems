@@ -9,6 +9,8 @@
     <Import_RootNamespace>TraktoriShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\GenericHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ItemHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\StopWatchHelper.cs" />
   </ItemGroup>
 </Project>

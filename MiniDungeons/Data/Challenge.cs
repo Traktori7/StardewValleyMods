@@ -22,5 +22,6 @@ namespace MiniDungeons.Data
 		public int TimerBeforeNextWaveSpawns { get; set; }
 		public List<Point> SpawnPoints { get; set; } = new List<Point>();
 		public List<SpawnedObject> SpawnedObjects { get; set; } = new List<SpawnedObject>();
+		public List<ItemInfo> Rewards { get; set; } = new List<ItemInfo>();
 	}
 }

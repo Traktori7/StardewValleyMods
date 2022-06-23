@@ -17,43 +17,48 @@ namespace TraktoriShared.Utils
 	internal static class ItemHelper
 	{
 		/// <summary>
-		/// TODO: todo
+		/// Gets the item matching the given qualified item ID.
 		/// </summary>
-		/// <param name="qualifiedItemID"></param>
-		/// <returns></returns>
-		internal static int? ParseQualifiedItemID(string qualifiedItemID)
+		/// <param name="qualifiedItemID">Item's qualified ID in the format "(ItemType)ItemName" or just "ItemName", which defaults to "(O)ItemName".</param>
+		/// <returns>The item, or an error object.</returns>
+		internal static Item GetItemFromQualifiedItemID(string qualifiedItemID)
 		{
-			string[] split = qualifiedItemID.Split('(', ')');
+			int index = qualifiedItemID.IndexOf(')');
 
-			if (split[0].Equals("O"))
+			string itemTypeString;
+			string itemName = qualifiedItemID[(index + 1)..];
+
+			if (index > 0)
 			{
-				return int.Parse(split[1]);
+				itemTypeString = qualifiedItemID[1..index];
+			}
+			else
+			{
+				itemTypeString = "O";
 			}
 
-			return null;
+			ItemType itemType = GetItemType(itemTypeString);
+
+			return GetItemFromItemName(itemName, itemType);
 		}
 
 
 		/// <summary>
-		/// WARNING! This method might be super heavy to run. Consider caching the values in to a dictionary.
+		/// Tries to get the object's index key that matches the given name.
 		/// </summary>
-		/// <param name="objectName">The object's internal name</param>
+		/// <param name="objectName">The object's internal name.</param>
 		/// <returns>Returns the key in Game1.objectInformation, or 0 if the object wasn't found.</returns>
 		internal static int GetIDFromObjectName(string objectName)
 		{
-			// TODO: Cache the result in a string-int dictionary?
-			// Special case handling needed atleast for: Weeds, Stone
-			// Also probably Rings too, since they're stored in objectInformation, but might construct differently
-			ReadOnlySpan<char> objectNameSpan = objectName.AsSpan();
-
-			foreach (KeyValuePair<int, string> kvp in Game1.objectInformation)
+			// Special case handling for stone, since there are multiple entries with the same name
+			if (objectName.Equals("Stone"))
 			{
-				ReadOnlySpan<char> splitName = kvp.Value.AsSpan(0, kvp.Value.IndexOf('/'));
+				return 390;
+			}
 
-				if (objectNameSpan.Equals(splitName, StringComparison.OrdinalIgnoreCase))
-				{
-					return kvp.Key;
-				}
+			if (GenericHelper.TryGetIndexByName(Game1.objectInformation, objectName, out int index))
+			{
+				return index;
 			}
 
 			return 0;
@@ -61,147 +66,73 @@ namespace TraktoriShared.Utils
 
 
 		/// <summary>
-		/// Gets the item matching the given name. Currently about 10 times slower than GetIDFromObjectName.
-		/// Probably because of the objectInformation split for the Ring category.
+		/// Tries to get the item matching the given name.
 		/// </summary>
-		/// <param name="qualifiedItemID">Item name in the format "(ItemType)ItemName" or just "ItemName", which defaults to "(O)ItemName"</param>
+		/// <param name="itemName">Item's internal name.</param>
+		/// <param name="type">Item's item type.</param>
 		/// <returns>The item, or an error object.</returns>
-		internal static Item GetItemFromQualifiedItemID(string qualifiedItemID)
+		internal static Item GetItemFromItemName(string itemName, ItemType type = ItemType.Object)
 		{
-			Item? returnItem = null;
-			/*string[] split = qualifiedItemID.Split(new[] { '(', ')' }, StringSplitOptions.RemoveEmptyEntries);
+			// TODO: Implement a cache for the results in a string-int dictionary?
+			// Probably unnecessary and potentially problematic if calling for multiple different values.
+			// So far doesn't take too long, but in the future consider a performant variant if need arises.
 
-			string itemType;
-			string itemName;
+			Item? returnItem = new SObject(0, 1);
+			int index;
 
-			if (split.Length == 1)
+			switch (type)
 			{
-				itemType = "O";
-				itemName = split[0];
-			}
-			else
-			{
-				itemType = split[0];
-				itemName = split[1];
-			}*/
-
-			int index = qualifiedItemID.IndexOf(')');
-
-			string itemType;
-			string itemName = qualifiedItemID[(index + 1)..];
-
-			if (index > 0)
-			{
-				itemType = qualifiedItemID[1..index];
-			}
-			else
-			{
-				itemType = "O";
-			}
-
-			switch (itemType)
-			{
-				case "O":   // objects
-					if (itemName.Contains("Ring") || itemName.Contains("Band"))
-					{
-						foreach (KeyValuePair<int, string> kvp in Game1.objectInformation)
-						{
-							//ReadOnlySpan<char> splitName = kvp.Value.AsSpan(0, kvp.Value.IndexOf('/'));
-							string[] objectData = kvp.Value.Split('/');
-
-							//ReadOnlySpan<char> type = kvp.Value.AsSpan();
-
-							if (itemName.Equals(objectData[0]))
-							{
-								// Exclude wedding ring, just in case
-								if (kvp.Key != 801 && objectData.Length >= 4 && objectData[3].Equals("Ring"))
-								{
-									returnItem = new StardewValley.Objects.Ring(kvp.Key);
-								}
-								else
-								{
-									returnItem = new SObject(kvp.Key, 1);
-								}
-
-								break;
-							}
-						}
-					}
-					else
-					{
-						returnItem = new SObject(GetIDFromObjectName(itemName), 1);
-					}
-					
+				case ItemType.Object:
+					returnItem = new SObject(GetIDFromObjectName(itemName), 1);
 					break;
-				case "BC":  // big craftables
-					foreach (var kvp in Game1.bigCraftablesInformation)
+				case ItemType.Ring:
+					returnItem = new StardewValley.Objects.Ring(GetIDFromObjectName(itemName));
+					break;
+				case ItemType.BigCraftable:
+					if (GenericHelper.TryGetIndexByName(Game1.bigCraftablesInformation, itemName, out index))
 					{
-						ReadOnlySpan<char> splitName = kvp.Value.AsSpan(0, kvp.Value.IndexOf('/'));
-
-						if (MemoryExtensions.Equals(splitName, itemName, StringComparison.Ordinal))
+						returnItem = new SObject(Vector2.Zero, index);
+					}
+					break;
+				case ItemType.Hat:
+					if (GenericHelper.TryGetIndexByName(Game1.content.Load<Dictionary<int, string>>("Data\\hats"), itemName, out index))
+					{
+						returnItem = new StardewValley.Objects.Hat(index);
+					}
+					break;
+				case ItemType.Boots:
+					if (GenericHelper.TryGetIndexByName(Game1.content.Load<Dictionary<int, string>>("Data\\Boots"), itemName, out index))
+					{
+						returnItem = new StardewValley.Objects.Boots(index);
+					}
+					break;
+				case ItemType.Weapon:
+					if (GenericHelper.TryGetIndexByName(Game1.content.Load<Dictionary<int, string>>("Data\\weapons"), itemName, out index))
+					{
+						if (index is 32 or 33 or 34)
 						{
-							returnItem = new SObject(Vector2.Zero, kvp.Key);
-							break;
+							returnItem = new StardewValley.Tools.Slingshot(index);
+						}
+						else
+						{
+							returnItem = new StardewValley.Tools.MeleeWeapon(index);
 						}
 					}
 					break;
-				case "B":   // boots
-					foreach (var kvp in Game1.content.Load<Dictionary<int, string>>("Data\\Boots"))
-					{
-						ReadOnlySpan<char> splitName = kvp.Value.AsSpan(0, kvp.Value.IndexOf('/'));
-
-						if (MemoryExtensions.Equals(splitName, itemName, StringComparison.Ordinal))
-						{
-							returnItem = new StardewValley.Objects.Boots(kvp.Key);
-							break;
-						}
-					}
-					break;
-				case "H":   // hats
-					foreach (var kvp in Game1.content.Load<Dictionary<int, string>>("Data\\hats"))
-					{
-						ReadOnlySpan<char> splitName = kvp.Value.AsSpan(0, kvp.Value.IndexOf('/'));
-
-						if (MemoryExtensions.Equals(splitName, itemName, StringComparison.Ordinal))
-						{
-							returnItem = new StardewValley.Objects.Hat(kvp.Key);
-							break;
-						}
-					}
-					break;
-				case "W":   // weapons
-					foreach (var kvp in Game1.content.Load<Dictionary<int, string>>("Data\\weapons"))
-					{
-						ReadOnlySpan<char> splitName = kvp.Value.AsSpan(0, kvp.Value.IndexOf('/'));
-
-						if (MemoryExtensions.Equals(splitName, itemName, StringComparison.Ordinal))
-						{
-							if (kvp.Key is 32 or 33 or 34)
-							{
-								returnItem = new StardewValley.Tools.Slingshot(kvp.Key);
-							}
-							else
-							{
-								returnItem = new StardewValley.Tools.MeleeWeapon(kvp.Key);
-							}
-							
-							break;
-						}
-					}
-					break;
+				case ItemType.None:
 				default:
 					break;
 			}
 
-			return returnItem is not null ? returnItem : new SObject(0,1);
+			return returnItem;
 		}
 
 
 		/// <summary>
-		/// Places an item on the ground that can be picked up
+		/// Places an item on the ground that can be picked up.
 		/// </summary>
-		/// <param name="location">The location to spawn the item into</param>
-		/// <param name="tile">The tile to spawn the item into</param>
+		/// <param name="location">The location to spawn the item into.</param>
+		/// <param name="tile">The tile to spawn the item into.</param>
 		/// <param name="objectName">The internal name of item to spawn. Spawns weeds if the name doesn't match any defined.</param>
 		internal static void PlacePickableItem(GameLocation? location, Point tile, string objectName)
 		{
@@ -211,11 +142,11 @@ namespace TraktoriShared.Utils
 
 
 		/// <summary>
-		/// Places an item on the ground that can be picked up
+		/// Places an item on the ground that can be picked up.
 		/// </summary>
-		/// <param name="location">The location to spawn the item into</param>
-		/// <param name="tile">The tile to spawn the item into</param>
-		/// <param name="objectID">The ID of the item to spawn</param>
+		/// <param name="location">The location to spawn the item into.</param>
+		/// <param name="tile">The tile to spawn the item into.</param>
+		/// <param name="objectID">The ID of the item to spawn.</param>
 		internal static void PlacePickableItem(GameLocation? location, Point tile, int objectID)
 		{
 			SObject obj = new SObject(objectID, 1);
@@ -224,15 +155,63 @@ namespace TraktoriShared.Utils
 
 
 		/// <summary>
-		/// Places an item on the ground that can be picked up
+		/// Places an item on the ground that can be picked up.
 		/// </summary>
-		/// <param name="location">The location to spawn the item into</param>
-		/// <param name="tile">The tile to spawn the item into</param>
-		/// <param name="obj">The item to spawn</param>
+		/// <param name="location">The location to spawn the item into.</param>
+		/// <param name="tile">The tile to spawn the item into.</param>
+		/// <param name="obj">The item to spawn.</param>
 		internal static void PlacePickableItem(GameLocation? location, Point tile, SObject obj)
 		{
 			// Multiply the tile coordinates by 64 to get the right spawning point
 			location?.dropObject(obj, tile.ToVector2() * 64f, Game1.viewport, true);
 		}
+
+
+		/// <summary>
+		/// Gets the item type matching the provided string code.
+		/// </summary>
+		/// <param name="itemTypeString">The item type string code.</param>
+		/// <returns>The item type, or ItemType.None if there was no matches.</returns>
+		internal static ItemType GetItemType(string itemTypeString)
+		{
+			if (itemTypeString.Equals("O"))
+			{
+				return ItemType.Object;
+			}
+			else if (itemTypeString.Equals("R"))
+			{
+				return ItemType.Ring;
+			}
+			else if (itemTypeString.Equals("B"))
+			{
+				return ItemType.Boots;
+			}
+			else if (itemTypeString.Equals("BC"))
+			{
+				return ItemType.BigCraftable;
+			}
+			else if (itemTypeString.Equals("H"))
+			{
+				return ItemType.Hat;
+			}
+			else if (itemTypeString.Equals("W"))
+			{
+				return ItemType.Weapon;
+			}
+
+			return ItemType.None;
+		}
+	}
+
+
+	internal enum ItemType
+	{
+		None,
+		Object,
+		Ring,
+		BigCraftable,
+		Hat,
+		Boots,
+		Weapon
 	}
 }

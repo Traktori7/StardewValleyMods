@@ -9,6 +9,7 @@ using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Monsters;
+using StardewValley.Objects;
 using SObject = StardewValley.Object;
 using TraktoriShared.Utils;
 
@@ -177,7 +178,7 @@ namespace MiniDungeons
 
 		private void ResetResetableFields()
 		{
-			state = DungeonState.NONE;
+			state = DungeonState.None;
 			mapType = -1;
 			currentDungeonLocation = -1;
 			wave = -1;
@@ -201,6 +202,7 @@ namespace MiniDungeons
 
 		/// <summary>
 		/// Picks randomly from the weighted dungeon maps. From: https://stackoverflow.com/a/1761646
+		/// TODO: Use config.enableFightingChallenges to check if the map can be picked based on its challenge
 		/// </summary>
 		/// <param name="data"></param>
 		/// <returns></returns>
@@ -307,11 +309,11 @@ namespace MiniDungeons
 		{
 			if (CanSpawnDungeonPortal())
 			{
-				state = DungeonState.DUNGEON_SPAWN_TESTED;
+				state = DungeonState.SpawnTested;
 
 				if (Game1.random.NextDouble() < SpawnChance)
 				{
-					state = DungeonState.DUNGEON_SPAWNED;
+					state = DungeonState.Spawned;
 
 					return true;
 				}
@@ -323,7 +325,7 @@ namespace MiniDungeons
 
 		private bool CanSpawnDungeonPortal()
 		{
-			if (state >= DungeonState.DUNGEON_SPAWN_TESTED)
+			if (state >= DungeonState.SpawnTested)
 			{
 				return false;
 			}
@@ -415,7 +417,7 @@ namespace MiniDungeons
 
 		private void DungeonCleared()
 		{
-			state = DungeonState.DUNGEON_CLEARED;
+			state = DungeonState.Cleared;
 
 			ModEntry.logMonitor.Log($"Player cleared dungeon {Name}!", LogLevel.Debug);
 
@@ -424,36 +426,27 @@ namespace MiniDungeons
 				Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
 			}
 
-			//System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-			//long nanoSecondsPerTick = (1000L * 1000L * 1000L) / System.Diagnostics.Stopwatch.Frequency;
+			SpawnRewards();
+		}
 
-			//stopwatch.Start();
 
-			//int id = ItemHelper.GetIDFromObjectName("Large Milk");
-			Item item = ItemHelper.GetItemFromQualifiedItemID("Large Milk");
-			//Item item = ItemHelper.GetItemFromQualifiedItemID("(W)Rusty Sword");
+		private void SpawnRewards()
+		{
+			//Methods to spawn it in the inventory with the hold animation
+			//Game1.player.holdUpItemThenMessage(item);
+			//Game1.player.addItemToInventoryBool(item);
 
-			//stopwatch.Stop();
-			//ModEntry.logMonitor.Log($"Getting the item took {stopwatch.ElapsedTicks * nanoSecondsPerTick / 1000} μs", LogLevel.Debug);
-
-			//stopwatch.Restart();
-
-			//int id = ItemHelper.GetIDFromObjectName("Glow Ring");
-
-			//stopwatch.Stop();
-			//ModEntry.logMonitor.Log($"Getting the id {id} took {stopwatch.ElapsedTicks * nanoSecondsPerTick / 1000} μs", LogLevel.Debug);
-
-			//ItemHelper.PlacePickableItem(CurrentDungeonLocation, new Point(6, 23), id);
-
-			// TODO: Add the reward to an unbreakable chest
-			if (item is SObject obj)
+			Chest chest = new Chest(true)
 			{
-				ItemHelper.PlacePickableItem(CurrentDungeonLocation, new Point(6, 23), obj);
-			}
-			else
+				Fragility = 2
+			};
+			CurrentDungeonLocation?.Objects.Add(new Vector2(6, 23), chest);
+
+			for (int i = 0; i < Challenge?.Rewards.Count; i++)
 			{
-				Game1.player.holdUpItemThenMessage(item);
-				Game1.player.addItemToInventoryBool(item);
+				Item item = ItemHelper.GetItemFromQualifiedItemID(Challenge.Rewards[i].ItemID);
+				item.Stack = Challenge.Rewards[i].StackSize;
+				chest.addItem(item);
 			}
 		}
 	}
@@ -461,10 +454,10 @@ namespace MiniDungeons
 
 	public enum DungeonState
 	{
-		NONE,
-		DUNGEON_SPAWN_TESTED,
-		DUNGEON_SPAWNED,
-		DUNGEON_ENTERED,
-		DUNGEON_CLEARED
+		None,
+		SpawnTested,
+		Spawned,
+		Entered,
+		Cleared
 	}
 }

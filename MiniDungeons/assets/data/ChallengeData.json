@@ -30,6 +30,15 @@
 				"X": 7,
 				"Y": 23
 			}
+		],
+		"Rewards": [
+			{
+				"ItemID": "Large Milk"
+			},
+			{
+				"ItemID": "Green Bean",
+				"StackSize": 2
+			}
 		]
 	},
 	{
@@ -47,7 +56,7 @@
 		],
 		"SpawnedObjects": [
 			{
-				"ObjectID": 390,
+				"ObjectID": "Stone",
 				"SpawnedAmount": 2
 			}
 		]

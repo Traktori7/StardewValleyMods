@@ -140,6 +140,14 @@ namespace MiniDungeons
 				min: -1
 			);
 
+			configMenu.AddBoolOption(
+				mod: ModManifest,
+				name: () => i18n.Get("gmcm.enable-fighting-challenge-label"),
+				tooltip: () => i18n.Get("gmcm.enable-notiffighting-challengeication-description"),
+				getValue: () => config.enableFightingchallenges,
+				setValue: (bool value) => config.enableFightingchallenges = value
+			);
+
 			// TODO: This doesn't seem to work at all
 			foreach (Dungeon dungeon in dungeonManager.dungeons)
 			{
