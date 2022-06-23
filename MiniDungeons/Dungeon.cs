@@ -341,22 +341,15 @@ namespace MiniDungeons
 
 		private Monster? SpawnMonster(string monsterName, Point point)
 		{
-			Monster? monster = null;
-
-			// TODO: Does this need unhardcodifying? Activator.CreateInstance or something? Or just SMAPI reflection/AccessTools?
-			switch (monsterName)
-			{
-				case "GreenSlime":
-					monster = new GreenSlime(new Vector2(point.X, point.Y) * 64f);
-					break;
-				default:
-					ModEntry.logMonitor.Log($"Trying to spawn an unkown monster type {monsterName} at {point}", LogLevel.Error);
-					break;
-			}
+			Monster? monster = MonsterHelper.GetMonsterFromName(monsterName, point.ToVector2());
 
 			if (monster is not null)
 			{
 				CurrentDungeonLocation?.characters.Add(monster);
+			}
+			else
+			{
+				ModEntry.logMonitor.Log($"Trying to spawn an unkown monster type {monsterName} at {point}", LogLevel.Error);
 			}
 			
 			return monster;
