@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -34,6 +35,8 @@ namespace MiniDungeons
 
 		private DungeonManager dungeonManager = null!;
 
+		public static readonly string actionName = $"{modIDPrefix}.Portal";
+
 
 		/// <summary>The mod entry point, called after the mod is first loaded.</summary>
 		/// <param name="helper">Provides simplified APIs for writing mods.</param>
@@ -52,6 +55,8 @@ namespace MiniDungeons
 			helper.Events.GameLoop.Saving += OnSaving;
 			helper.Events.Player.Warped += OnWarped;
 			helper.Events.World.NpcListChanged += OnNpcListChanged;
+
+			DoHarmonyPatches();
 		}
 
 
@@ -308,6 +313,19 @@ namespace MiniDungeons
 			{
 				return i18n.Get($"gmcm.{optionName}-description");
 			}
+		}
+
+
+		private void DoHarmonyPatches()
+		{
+			HarmonyPatches.PerformTouchAction.Initialize(Monitor, i18n);
+
+			var harmony = new Harmony(ModManifest.UniqueID);
+			harmony.Patch(
+				original: AccessTools.Method(typeof(StardewValley.GameLocation), nameof(StardewValley.GameLocation.performTouchAction))
+					?? throw new InvalidOperationException("Can't find GameLocation.performTouchAction to patch"),
+				postfix: new HarmonyMethod(typeof(HarmonyPatches.PerformTouchAction), nameof(HarmonyPatches.PerformTouchAction.PerformTouchAction_Postfix))
+			);
 		}
 	}
 }

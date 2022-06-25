@@ -9,13 +9,15 @@ using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Monsters;
+using xTile.Tiles;
 
 
 namespace MiniDungeons
 {
 	internal class DungeonManager
 	{
-		public readonly List<Warp> activeWarps = new List<Warp>();
+		//public readonly List<Warp> activeWarps = new List<Warp>();
+		public readonly List<Dungeon> activeDungeons = new List<Dungeon>();
 		public readonly List<Dungeon> dungeons = new List<Dungeon>();
 
 		public int spawnedDungeonsToday = 0;
@@ -279,10 +281,24 @@ namespace MiniDungeons
 			Point entryPortalPoint = dungeon.EntryPortalPoint;
 			Point exitPortalPoint = dungeon.ExitPortalPoint;
 
-			Warp warp = new Warp(entryPortalPoint.X, entryPortalPoint.Y, dungeonLocation.Name, exitPortalPoint.X, exitPortalPoint.Y, false);
+			//Warp warp = new Warp(entryPortalPoint.X, entryPortalPoint.Y, dungeonLocation.Name, exitPortalPoint.X, exitPortalPoint.Y, false);
 
-			location.warps.Add(warp);
-			activeWarps.Add(warp);
+			//location.warps.Add(warp);
+			//activeWarps.Add(warp);
+
+			Tile? tile = GetBackTile(location, entryPortalPoint);
+
+			if (tile is not null)
+			{
+				string propertyString = $"{ModEntry.actionName} {dungeonLocation.Name} {exitPortalPoint.X} {exitPortalPoint.Y}";
+				tile.Properties.Add("TouchAction", new xTile.ObjectModel.PropertyValue(propertyString));
+			}
+			else
+			{
+				ModEntry.logMonitor.Log($"Couldn't find tile {entryPortalPoint} in {location.Name}", LogLevel.Error);
+			}
+
+			activeDungeons.Add(dungeon);
 
 			ModEntry.logMonitor.Log($"Added warp to {location.Name} at ({entryPortalPoint.X} {entryPortalPoint.Y}) targetting {dungeonLocation.Name}", LogLevel.Debug);
 
@@ -308,14 +324,17 @@ namespace MiniDungeons
 
 			if (location is not null)
 			{
-				location.warps.Remove(activeWarps[0]);
+				//location.warps.Remove(activeWarps[0]);
+				Tile? tile = GetBackTile(location, dungeon.EntryPortalPoint);
+				tile?.Properties.Remove("TouchAction");
 			}
 			else
 			{
 				ModEntry.logMonitor.Log($"Failed getting the location from dungeon data {dungeon.Name}", LogLevel.Error);
 			}
 
-			activeWarps.Clear();
+			//activeWarps.Clear();
+			activeDungeons.Remove(dungeon);
 		}
 
 
@@ -332,6 +351,12 @@ namespace MiniDungeons
 
 			warp = null;
 			return false;
+		}
+
+
+		private static Tile? GetBackTile(GameLocation location, Point tileCoordinates)
+		{
+			return location.Map.GetLayer("Back").PickTile(new xTile.Dimensions.Location(tileCoordinates.X * 64, tileCoordinates.Y * 64), Game1.viewport.Size);
 		}
 
 

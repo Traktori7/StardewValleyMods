@@ -10,5 +10,9 @@
 	"gmcm.enable-dungeon-label": "Enable dungeon {{dungeonName}}",
 	"gmcm.enable-dungeon-description": "Allows spawning the portal for dungeon {{dungeonName}}.",
 	"gmcm.dungeon-spawn-chance-label": "Dungeon {{dungeonName}} spawn chance",
-	"gmcm.dungeon-spawn-chance-description": "Dungeon {{dungeonName}} spawn chance, default: {{defaultChance}}."
+	"gmcm.dungeon-spawn-chance-description": "Dungeon {{dungeonName}} spawn chance, default: {{defaultChance}}.",
+	//
+	"dialogue.answer-yes": "Enter the portal",
+	"dialogue.answer-no": "Not right now",
+	"dialogue.answer-remove": "Go away, portal!"
 }
