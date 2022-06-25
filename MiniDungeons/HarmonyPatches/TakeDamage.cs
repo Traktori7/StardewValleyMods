@@ -1,19 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using HarmonyLib;
-using Microsoft.Xna.Framework;
 using StardewModdingAPI;
-using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
-using StardewValley.Menus;
-using StardewValley.Monsters;
-using xTile.Dimensions;
-
-using TraktoriShared.Utils;
 
 
 namespace MiniDungeons.HarmonyPatches
@@ -34,7 +22,8 @@ namespace MiniDungeons.HarmonyPatches
 		{
 			try
 			{
-				if (__instance.health <= 0 && DungeonManager.IsLocationMiniDungeon(Game1.currentLocation))
+				if (__instance.health <= 0 && ModEntry.config.enableDeathProtection
+					&& DungeonManager.IsLocationMiniDungeon(Game1.currentLocation))
 				{
 					__instance.health = 1;
 					DungeonManager.ExitDungeon(true);

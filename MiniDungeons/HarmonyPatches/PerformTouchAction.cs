@@ -1,19 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using HarmonyLib;
-using Microsoft.Xna.Framework;
 using StardewModdingAPI;
-using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
-using StardewValley.Menus;
-using StardewValley.Monsters;
-using xTile.Dimensions;
-
-using TraktoriShared.Utils;
 
 
 namespace MiniDungeons.HarmonyPatches
@@ -23,7 +11,6 @@ namespace MiniDungeons.HarmonyPatches
 		private static IMonitor Monitor = null!;
 		private static ITranslationHelper Translator = null!;
 
-		//private static string[]? warpParameters;
 		private static Data.WarpParameters? WarpParameters;
 		private static readonly string answerYes = "Yes";
 		private static readonly string answerNo = "No";

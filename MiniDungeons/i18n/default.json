@@ -7,6 +7,8 @@
 	"gmcm.dungeon-limit-description": "Max number of spawned dungeon portals per day, -1 for no limit.",
 	"gmcm.enable-fighting-challenge-label": "Enable fighting challenges",
 	"gmcm.enable-fighting-challenge-description": "Allows spawning fighting challenges in dungeons.",
+	"gmcm.enable-death-protection-label": "Enable fighting challenges",
+	"gmcm.enable-death-protection-description": "Allows spawning fighting challenges in dungeons.",
 	"gmcm.enable-dungeon-label": "Enable dungeon {{dungeonName}}",
 	"gmcm.enable-dungeon-description": "Allows spawning the portal for dungeon {{dungeonName}}.",
 	"gmcm.dungeon-spawn-chance-label": "Dungeon {{dungeonName}} spawn chance",
@@ -14,5 +16,9 @@
 	//
 	"dialogue.answer-yes": "Enter the portal",
 	"dialogue.answer-no": "Not right now",
-	"dialogue.answer-remove": "Go away, portal!"
+	"dialogue.answer-remove": "Go away, portal!",
+	//
+	"hud.new-portal": "A new portal has appeared!",
+	"hud.dungeon-cleared": "The dungeon has been cleared",
+	"hud.player-saved": "The forest magic saves you from certain doom"
 }

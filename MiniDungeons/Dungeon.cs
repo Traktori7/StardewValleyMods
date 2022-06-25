@@ -416,7 +416,7 @@ namespace MiniDungeons
 
 			if (ModEntry.config.enableHUDNotification)
 			{
-				Game1.addHUDMessage(new HUDMessage("The dungeon has been cleared", string.Empty));
+				Game1.addHUDMessage(new HUDMessage(ModEntry.i18n.Get("hud.dungeon-cleared"), string.Empty));
 			}
 
 			SpawnRewards();

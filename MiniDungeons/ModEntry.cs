@@ -185,6 +185,15 @@ namespace MiniDungeons
 				setValue: (bool value) => config.enableFightingchallenges = value
 			);
 
+			string enableDeathProtection = "enable-death-protection";
+			configMenu.AddBoolOption(
+				mod: ModManifest,
+				name: () => GetLabelTranslation(enableDeathProtection),
+				tooltip: () => GetDescriptionTranslation(enableDeathProtection),
+				getValue: () => config.enableDeathProtection,
+				setValue: (bool value) => config.enableDeathProtection = value
+			);
+
 			foreach (Dungeon dungeon in DungeonManager.dungeons)
 			{
 				string enableDungeon = "enable-dungeon";
@@ -214,7 +223,7 @@ namespace MiniDungeons
 		/// <summary>
 		/// Initializes the config by removing values that don't match currently loaded dungeons.
 		/// </summary>
-		private void InitializeConfig()
+		private static void InitializeConfig()
 		{
 			// Makes sure the dictionaries don't contain any old keys, but keeps the old values
 			Dictionary<string, bool> temp1 = config.enabledDungeons;

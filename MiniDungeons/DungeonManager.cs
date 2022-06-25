@@ -308,7 +308,7 @@ namespace MiniDungeons
 
 			if (ModEntry.config.enableHUDNotification)
 			{
-				Game1.addHUDMessage(new HUDMessage("A new portal has appeared!", HUDMessage.newQuest_type));
+				Game1.addHUDMessage(new HUDMessage(ModEntry.i18n.Get("hud.new-portal"), HUDMessage.newQuest_type));
 			}
 
 			Game1.locations.Add(dungeonLocation);
@@ -427,7 +427,7 @@ namespace MiniDungeons
 
 			if (playerDied)
 			{
-				Game1.addHUDMessage(new HUDMessage("The forest magic saves you from certain doom", HUDMessage.health_type));
+				Game1.addHUDMessage(new HUDMessage(ModEntry.i18n.Get("hud.player-saved"), HUDMessage.health_type));
 			}
 		}
 	}
