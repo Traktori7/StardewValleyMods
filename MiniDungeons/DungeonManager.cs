@@ -17,7 +17,8 @@ namespace MiniDungeons
 	internal class DungeonManager
 	{
 		//public readonly List<Warp> activeWarps = new List<Warp>();
-		public readonly List<Dungeon> activeDungeons = new List<Dungeon>();
+		//public static readonly List<Dungeon> activeDungeons = new List<Dungeon>();
+		public static readonly List<Data.Portal> activePortals = new List<Data.Portal>();
 		public readonly List<Dungeon> dungeons = new List<Dungeon>();
 
 		public int spawnedDungeonsToday = 0;
@@ -91,7 +92,8 @@ namespace MiniDungeons
 					string challengeName = dungeon.ChallengeName ?? "unknown challenge";
 					ModEntry.logMonitor.Log($"Initialized dungeon {dungeon.Name}, the challenge is {challengeName}", LogLevel.Debug);
 
-					ClearWarps(dungeon);
+					//ClearWarps(dungeon);
+					RemoveWarp(dungeon.Name);
 				}
 			}
 			else
@@ -99,10 +101,7 @@ namespace MiniDungeons
 				TryToSpawnDungeon(e.NewLocation);
 			}
 
-			if (TryGetPortalWarp(e.NewLocation, out Warp? warp))
-			{
-				SpawnPortalSprite(e.NewLocation, warp);
-			}
+			SpawnPortalSprites(e.NewLocation);
 		}
 
 
@@ -298,7 +297,9 @@ namespace MiniDungeons
 				ModEntry.logMonitor.Log($"Couldn't find tile {entryPortalPoint} in {location.Name}", LogLevel.Error);
 			}
 
-			activeDungeons.Add(dungeon);
+			//activeDungeons.Add(dungeon);
+			Data.Portal portal = new Data.Portal(location, entryPortalPoint, dungeon);
+			activePortals.Add(portal);
 
 			ModEntry.logMonitor.Log($"Added warp to {location.Name} at ({entryPortalPoint.X} {entryPortalPoint.Y}) targetting {dungeonLocation.Name}", LogLevel.Debug);
 
@@ -314,60 +315,84 @@ namespace MiniDungeons
 		}
 
 
+		internal static void RemoveWarp(string dungeonName)
+		{
+			foreach (var item in activePortals)
+			{
+				if (dungeonName.Contains(item.dungeon.Name))
+				{
+					ClearWarps(item);
+					return;
+				}
+			}
+		}
+
+
 		/// <summary>
 		/// Deletes the entry warp for the cleared dungeon
-		/// TODO: Make cleaning the warps more robust
 		/// </summary>
-		private void ClearWarps(Dungeon dungeon)
+		private static void ClearWarps(Data.Portal portal)
 		{
-			GameLocation location = Game1.getLocationFromName(dungeon.SpawnMapName);
+			//GameLocation location = Game1.getLocationFromName(dungeon.SpawnMapName);
+			GameLocation location = portal.location;
 
 			if (location is not null)
 			{
 				//location.warps.Remove(activeWarps[0]);
-				Tile? tile = GetBackTile(location, dungeon.EntryPortalPoint);
+				Tile? tile = GetBackTile(location, portal.point);
 				tile?.Properties.Remove("TouchAction");
+
+				location.temporarySprites.Remove(portal.sprite);
 			}
 			else
 			{
-				ModEntry.logMonitor.Log($"Failed getting the location from dungeon data {dungeon.Name}", LogLevel.Error);
+				ModEntry.logMonitor.Log($"Failed getting the location from dungeon data {portal.dungeon.Name}", LogLevel.Error);
 			}
 
 			//activeWarps.Clear();
-			activeDungeons.Remove(dungeon);
+			//activeDungeons.Remove(dungeon);
+			activePortals.Remove(portal);
 		}
 
 
-		private static bool TryGetPortalWarp(GameLocation location, [NotNullWhen(true)] out Warp? warp)
-		{
-			foreach (var item in location.warps)
-			{
-				if (item.TargetName.StartsWith(ModEntry.modIDPrefix))
-				{
-					warp = item;
-					return true;
-				}
-			}
-
-			warp = null;
-			return false;
-		}
-
-
+		/// <summary>
+		/// Gets a tile from the Back layer.
+		/// </summary>
+		/// <param name="location">The game location.</param>
+		/// <param name="tileCoordinates">The tile coordinates of the tile.</param>
+		/// <returns>The tile, or null if it wasn't found.</returns>
 		private static Tile? GetBackTile(GameLocation location, Point tileCoordinates)
 		{
 			return location.Map.GetLayer("Back").PickTile(new xTile.Dimensions.Location(tileCoordinates.X * 64, tileCoordinates.Y * 64), Game1.viewport.Size);
 		}
 
 
-		private static void SpawnPortalSprite(GameLocation location, Warp warp)
+		/// <summary>
+		/// Tries to spawn the portal sprites in a location.
+		/// </summary>
+		/// <param name="location">The location where to spawn the portal sprites.</param>
+		private static void SpawnPortalSprites(GameLocation location)
 		{
+			foreach (var item in activePortals)
+			{
+				if (location.Name.Equals(item.location.Name))
+				{
+					SpawnPortalSprite(location, item);
+				}
+			}
+		}
+
+
+		private static void SpawnPortalSprite(GameLocation location, Data.Portal portal)
+		{
+			Point portalSpawnPoint = portal.point;
+
 			int sizeCorrectionMultiplier = 4;
 			float animationIntervalInMilliseconds = 1000f;
 			int animationLenght = 4;
 			int loops = 1000000000;
 			// Y-coordinate needs to be 1 less that the portal position, OR change the portal to be 1x1?
-			Vector2 portalPosition = new Vector2(warp.X, warp.Y - 1) * 64f;
+			Vector2 portalPosition = new Vector2(portalSpawnPoint.X, portalSpawnPoint.Y - 1) * 64f;
 
 			TemporaryAnimatedSprite sprite = new TemporaryAnimatedSprite(ModEntry.portalAssetName,
 				new Rectangle(0, 0, 16, 32),
@@ -381,6 +406,7 @@ namespace MiniDungeons
 				scale = sizeCorrectionMultiplier
 			};
 
+			portal.sprite = sprite;
 			location.temporarySprites.Add(sprite);
 		}
 	}

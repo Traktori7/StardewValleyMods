@@ -23,16 +23,19 @@ namespace MiniDungeons.HarmonyPatches
 		private static IMonitor Monitor = null!;
 		private static ITranslationHelper Translator = null!;
 
+		private static DungeonManager DungeonManager = null!;
+
 		//private static string[]? warpParameters;
 		private static Data.WarpParameters? WarpParameters;
 		private static readonly string answerYes = "Yes";
 		private static readonly string answerNo = "No";
 		private static readonly string answerRemove = "Remove";
 
-		public static void Initialize(IMonitor monitor, ITranslationHelper translationHelper)
+		internal static void Initialize(IMonitor monitor, ITranslationHelper translationHelper, DungeonManager manager)
 		{
 			Monitor = monitor;
 			Translator = translationHelper;
+			DungeonManager = manager;
 		}
 
 		public static void PerformTouchAction_Postfix(string fullActionString)
@@ -88,7 +91,10 @@ namespace MiniDungeons.HarmonyPatches
 			}
 			else if (dialogueID.Equals(answerRemove))
 			{
-
+				if (WarpParameters is not null)
+				{
+					DungeonManager.RemoveWarp(WarpParameters.TargetLocation);
+				}
 			}
 		}
 	}

@@ -318,7 +318,7 @@ namespace MiniDungeons
 
 		private void DoHarmonyPatches()
 		{
-			HarmonyPatches.PerformTouchAction.Initialize(Monitor, i18n);
+			HarmonyPatches.PerformTouchAction.Initialize(Monitor, i18n, dungeonManager);
 
 			var harmony = new Harmony(ModManifest.UniqueID);
 			harmony.Patch(
