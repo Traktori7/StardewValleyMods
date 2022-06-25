@@ -341,7 +341,7 @@ namespace MiniDungeons
 
 		private Monster? SpawnMonster(string monsterName, Point point)
 		{
-			Monster? monster = MonsterHelper.GetMonsterFromName(monsterName, point.ToVector2());
+			Monster? monster = MonsterHelper.GetMonsterFromName(monsterName, point);
 
 			if (monster is not null)
 			{

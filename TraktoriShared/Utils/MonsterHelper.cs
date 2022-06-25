@@ -79,9 +79,6 @@ namespace TraktoriShared.Utils
 		/// <returns>The monster type.</returns>
 		internal static MonsterType GetMonsterTypeFromName(string monsterName)
 		{
-			// Remove the space in the name, by https://stackoverflow.com/a/30732794
-			//string nameWithoutSpace = string.Join(string.Empty, monsterName.Split(' '));
-
 			// TryParse seems to do something weird sometimes with the values it parses succesfully,
 			// so double check the parsing worked with IsDefined.
 			if (Enum.TryParse(monsterName, out MonsterType monsterType) && Enum.IsDefined(monsterType))
@@ -93,7 +90,13 @@ namespace TraktoriShared.Utils
 		}
 
 
-		internal static Monster? GetMonsterFromName(string monsterName, Vector2 spawnPoint)
+		/// <summary>
+		/// Creates a monster instance that matches the given name.
+		/// </summary>
+		/// <param name="monsterName">The name of the monster.</param>
+		/// <param name="spawnPoint">The tile to spawn the monster on.</param>
+		/// <returns>The monster instance, or null if the given type doesn't match any.</returns>
+		internal static Monster? GetMonsterFromName(string monsterName, Point spawnPoint)
 		{
 			MonsterType type = GetMonsterTypeFromName(monsterName);
 
@@ -101,9 +104,20 @@ namespace TraktoriShared.Utils
 		}
 
 
-		internal static Monster? GetMonsterFromType(MonsterType monsterType, Vector2 spawnPoint)
+		/// <summary>
+		/// Creates a monster instance that matches the given type.
+		/// </summary>
+		/// <param name="monsterType">The monster type to create.</param>
+		/// <param name="point">The tile to spawn the monster on.</param>
+		/// <returns>The monster instance, or null if the given type doesn't match any.</returns>
+		internal static Monster? GetMonsterFromType(MonsterType monsterType, Point point)
 		{
 			Monster? monster = null;
+			// The game uses tile coordinates * 64 for the real spawn location.
+			// It's probably pixel coordinates since a tile of 16 pixels gets scaled by 4.
+			// Interestingly the monsters get autokilled if they touch the negative coordinates,
+			// or atleast that seems to be the case since if you spawn them on (0, 0) and they walk of the edge get removed.
+			Vector2 spawnPoint = point.ToVector2() * 64;
 
 			switch (monsterType)
 			{
