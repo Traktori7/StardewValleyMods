@@ -19,9 +19,9 @@ namespace MiniDungeons
 		//public readonly List<Warp> activeWarps = new List<Warp>();
 		//public static readonly List<Dungeon> activeDungeons = new List<Dungeon>();
 		public static readonly List<Data.Portal> activePortals = new List<Data.Portal>();
-		public readonly List<Dungeon> dungeons = new List<Dungeon>();
+		public static readonly List<Dungeon> dungeons = new List<Dungeon>();
 
-		public int spawnedDungeonsToday = 0;
+		public static int spawnedDungeonsToday = 0;
 
 
 		public DungeonManager()
@@ -30,7 +30,7 @@ namespace MiniDungeons
 		}
 
 
-		public void PopulateDungeonList(Dictionary<string, Data.Dungeon> dungeonData, Dictionary<string, Data.Challenge> challengeData)
+		public static void PopulateDungeonList(Dictionary<string, Data.Dungeon> dungeonData, Dictionary<string, Data.Challenge> challengeData)
 		{
 			// TODO: Add the challenge list to the dungeon instead of just the data?
 			List<Challenge> challenges = new List<Challenge>();
@@ -49,7 +49,7 @@ namespace MiniDungeons
 		}
 
 
-		public void PerformDayReset()
+		public static void PerformDayReset()
 		{
 			spawnedDungeonsToday = 0;
 
@@ -63,7 +63,7 @@ namespace MiniDungeons
 		/// <summary>
 		/// Remove the added dungeon locations before the game tries to serialize them to the save file
 		/// </summary>
-		public void RemoveAddedLocations()
+		public static void RemoveAddedLocations()
 		{
 			foreach (Dungeon dungeon in dungeons)
 			{
@@ -77,7 +77,7 @@ namespace MiniDungeons
 		/// </summary>
 		/// <param name="e">Arguments from the Warped event</param>
 		/// <remarks>New location is quaranteed to be not null</remarks>
-		public void PlayerWarped(WarpedEventArgs e)
+		public static void PlayerWarped(WarpedEventArgs e)
 		{
 			// TODO: Consider pattern matching (location is Dungeon dungeon) if the method isn't going to be any more complex
 			if (IsLocationMiniDungeon(e.NewLocation))
@@ -110,7 +110,7 @@ namespace MiniDungeons
 		/// </summary>
 		/// <param name="e">Arguments from the NpcListChanged event</param>
 		/// <remarks>Call this only if the player is currently in a dungeon</remarks>
-		public void NpcListChangedInDungeon(NpcListChangedEventArgs e)
+		public static void NpcListChangedInDungeon(NpcListChangedEventArgs e)
 		{
 			Dungeon? currentDungeon = GetCurrentDungeon();
 
@@ -124,7 +124,7 @@ namespace MiniDungeons
 		}
 
 
-		public void TryToSpawnDungeon(GameLocation location)
+		public static void TryToSpawnDungeon(GameLocation location)
 		{
 			if (CanSpawnDungeon())
 			{
@@ -140,7 +140,7 @@ namespace MiniDungeons
 		}
 
 
-		public Dungeon? GetDungeon(DungeonLocation? location)
+		public static Dungeon? GetDungeon(DungeonLocation? location)
 		{
 			if (location is null)
 			{
@@ -159,7 +159,7 @@ namespace MiniDungeons
 		}
 
 
-		private bool CanSpawnDungeon()
+		private static bool CanSpawnDungeon()
 		{
 			if (ModEntry.config.maxNumberOfDungeonsPerDay != -1 && spawnedDungeonsToday >= ModEntry.config.maxNumberOfDungeonsPerDay)
 			{
@@ -191,7 +191,7 @@ namespace MiniDungeons
 		}
 
 
-		private bool TryGetDungeon(string? mapName, [NotNullWhen(true)] out Dungeon? dungeon)
+		private static bool TryGetDungeon(string? mapName, [NotNullWhen(true)] out Dungeon? dungeon)
 		{
 			for (int i = 0; i < dungeons.Count; i++)
 			{
@@ -223,7 +223,7 @@ namespace MiniDungeons
 		}
 
 
-		public Dungeon? GetCurrentDungeon()
+		public static Dungeon? GetCurrentDungeon()
 		{
 			foreach (Dungeon dungeon in dungeons)
 			{
@@ -266,7 +266,7 @@ namespace MiniDungeons
 		}*/
 
 
-		public void SpawnDungeonPortal(Dungeon dungeon, GameLocation location)
+		public static void SpawnDungeonPortal(Dungeon dungeon, GameLocation location)
 		{
 			// TODO: Switch away from using warps, since apparently NPCs can use them (confirm).
 			// Use some sort of Action with a confirmation box/way to remove the portal?
@@ -408,6 +408,27 @@ namespace MiniDungeons
 
 			portal.sprite = sprite;
 			location.temporarySprites.Add(sprite);
+		}
+
+
+		internal static void ExitDungeon(bool playerDied)
+		{
+			if (!IsLocationMiniDungeon(Game1.currentLocation))
+			{
+				return;
+			}
+
+			Dungeon? dungeon = GetCurrentDungeon();
+
+			if (dungeon is not null)
+			{
+				Game1.warpFarmer(dungeon.SpawnMapName, dungeon.EntryPortalPoint.X, dungeon.EntryPortalPoint.Y, Game1.facingDirectionAfterWarp);
+			}
+
+			if (playerDied)
+			{
+				Game1.addHUDMessage(new HUDMessage("The forest magic saves you from certain doom", HUDMessage.health_type));
+			}
 		}
 	}
 }

@@ -33,7 +33,7 @@ namespace MiniDungeons
 		internal static ModConfig config = null!;
 		internal static readonly string modIDPrefix = "Traktori.MiniDungeons";
 
-		private DungeonManager dungeonManager = null!;
+		//private DungeonManager dungeonManager = null!;
 
 		public static readonly string actionName = $"{modIDPrefix}.Portal";
 
@@ -84,7 +84,7 @@ namespace MiniDungeons
 		/// </summary>
 		private void OnDayStarted(object? sender, DayStartedEventArgs e)
 		{
-			dungeonManager.PerformDayReset();
+			DungeonManager.PerformDayReset();
 		}
 
 
@@ -111,7 +111,7 @@ namespace MiniDungeons
 		/// </summary>
 		private void OnSaving(object? sender, SavingEventArgs e)
 		{
-			dungeonManager.RemoveAddedLocations();
+			DungeonManager.RemoveAddedLocations();
 		}
 
 
@@ -126,7 +126,7 @@ namespace MiniDungeons
 				return;
 			}
 
-			dungeonManager.PlayerWarped(e);
+			DungeonManager.PlayerWarped(e);
 		}
 
 
@@ -138,7 +138,7 @@ namespace MiniDungeons
 		{
 			if (e.IsCurrentLocation && DungeonManager.IsLocationMiniDungeon(Game1.currentLocation))
 			{
-				dungeonManager.NpcListChangedInDungeon(e);
+				DungeonManager.NpcListChangedInDungeon(e);
 			}
 		}
 
@@ -185,7 +185,7 @@ namespace MiniDungeons
 				setValue: (bool value) => config.enableFightingchallenges = value
 			);
 
-			foreach (Dungeon dungeon in dungeonManager.dungeons)
+			foreach (Dungeon dungeon in DungeonManager.dungeons)
 			{
 				string enableDungeon = "enable-dungeon";
 				configMenu.AddBoolOption(
@@ -224,7 +224,7 @@ namespace MiniDungeons
 			config.dungeonSpawnChances.Clear();
 
 			// Initialize with only the values for the currently loaded dungeons
-			foreach (Dungeon dungeon in dungeonManager.dungeons)
+			foreach (Dungeon dungeon in DungeonManager.dungeons)
 			{
 				if (!config.enabledDungeons.ContainsKey(dungeon.Name))
 				{
@@ -261,12 +261,10 @@ namespace MiniDungeons
 		/// </summary>
 		private void ReadData()
 		{
-			dungeonManager = new DungeonManager();
-
 			Dictionary<string, Data.Challenge> challengeData = ReadChallengeData();
 			Dictionary<string, Data.Dungeon> dungeonData = ReadDungeonData();
 
-			dungeonManager.PopulateDungeonList(dungeonData, challengeData);
+			DungeonManager.PopulateDungeonList(dungeonData, challengeData);
 		}
 
 
@@ -318,13 +316,23 @@ namespace MiniDungeons
 
 		private void DoHarmonyPatches()
 		{
-			HarmonyPatches.PerformTouchAction.Initialize(Monitor, i18n, dungeonManager);
-
 			var harmony = new Harmony(ModManifest.UniqueID);
+
+			HarmonyPatches.PerformTouchAction.Initialize(Monitor, i18n);
+			
 			harmony.Patch(
 				original: AccessTools.Method(typeof(StardewValley.GameLocation), nameof(StardewValley.GameLocation.performTouchAction))
 					?? throw new InvalidOperationException("Can't find GameLocation.performTouchAction to patch"),
 				postfix: new HarmonyMethod(typeof(HarmonyPatches.PerformTouchAction), nameof(HarmonyPatches.PerformTouchAction.PerformTouchAction_Postfix))
+			);
+
+
+			HarmonyPatches.TakeDamage.Initialize(Monitor);
+
+			harmony.Patch(
+				original: AccessTools.Method(typeof(StardewValley.Farmer), nameof(StardewValley.Farmer.takeDamage))
+					?? throw new InvalidOperationException("Can't find StardewValley.Farmer.takeDamage to patch"),
+				postfix: new HarmonyMethod(typeof(HarmonyPatches.TakeDamage), nameof(HarmonyPatches.TakeDamage.TakeDamage_Postfix))
 			);
 		}
 	}

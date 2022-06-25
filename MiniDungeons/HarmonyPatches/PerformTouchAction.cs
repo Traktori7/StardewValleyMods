@@ -23,19 +23,16 @@ namespace MiniDungeons.HarmonyPatches
 		private static IMonitor Monitor = null!;
 		private static ITranslationHelper Translator = null!;
 
-		private static DungeonManager DungeonManager = null!;
-
 		//private static string[]? warpParameters;
 		private static Data.WarpParameters? WarpParameters;
 		private static readonly string answerYes = "Yes";
 		private static readonly string answerNo = "No";
 		private static readonly string answerRemove = "Remove";
 
-		internal static void Initialize(IMonitor monitor, ITranslationHelper translationHelper, DungeonManager manager)
+		internal static void Initialize(IMonitor monitor, ITranslationHelper translationHelper)
 		{
 			Monitor = monitor;
 			Translator = translationHelper;
-			DungeonManager = manager;
 		}
 
 		public static void PerformTouchAction_Postfix(string fullActionString)
@@ -55,7 +52,7 @@ namespace MiniDungeons.HarmonyPatches
 			}
 			catch (Exception ex)
 			{
-				Monitor.Log("Harmony patch PerformAction_Prefix failed", LogLevel.Error);
+				Monitor.Log("Harmony patch PerformAction_Postfix failed", LogLevel.Error);
 				Monitor.Log(ex.ToString(), LogLevel.Error);
 			}
 		}
