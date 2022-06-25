@@ -11,6 +11,8 @@ using StardewValley.Buildings;
 using StardewValley.Menus;
 using SObject = StardewValley.Object;
 
+using TraktoriShared.Utils;
+
 
 namespace IndustrialFurnace
 {
@@ -104,10 +106,10 @@ namespace IndustrialFurnace
 		}
 
 
-		/// <summary>Sends a message for all connected players the updated save data. TODO: Exclude the sender?</summary>
+		/// <summary>Sends a message for all connected players the updated save data.</summary>
 		public void SendUpdateMessage()
 		{
-			// Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
+			// Refresh the save data for the multiplayer message and send message to all other players
 			InitializeSaveData();
 			Helper.Multiplayer.SendMessage(modSaveData, saveDataRefreshedMessage, new[] { ModManifest.UniqueID });
 		}
@@ -188,27 +190,25 @@ namespace IndustrialFurnace
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationSpriteName))
 			{
-				//e.LoadFromModFile<Texture2D>(smokeAnimationSpritePath, AssetLoadPriority.Low);
 				// Create a right sized dummy texture since its width can't be resized by CP
 				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationSpriteName))
 			{
-				//e.LoadFromModFile<Texture2D>(fireAnimationSpritePath, AssetLoadPriority.Low);
 				// Create a right sized dummy texture since its width can't be resized by CP
 				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(smeltingRulesDataName))
 			{
-				e.LoadFrom(() => LoadJson<Dictionary<string,string>>(smeltingRulesDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<Dictionary<string,string>>(smeltingRulesDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
-				e.LoadFrom(() => LoadJson<SmokeAnimationData>(smokeAnimationDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<SmokeAnimationData>(smokeAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationDataName))
 			{
-				e.LoadFrom(() => LoadJson<FireAnimationData>(fireAnimationDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<FireAnimationData>(fireAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.NameWithoutLocale.IsEquivalentTo(blueprintsPath))
 			{
@@ -217,25 +217,14 @@ namespace IndustrialFurnace
 					var dictionary = asset.AsDictionary<string, string>();
 
 					// TODO: Use the name specified in the blueprint?
-					blueprintData = Helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath)!;
+					blueprintData = GenericHelper.LoadAsset<BlueprintData>(blueprintDataPath, Helper.Data, Monitor);
 
-					dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
+					if (blueprintData is not null)
+					{
+						dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
+					}
 				});
 			}
-		}
-
-
-		internal T LoadJson<T>(string asset) where T : class, new()
-		{
-			T? json = Helper.Data.ReadJsonFile<T>(asset);
-
-			if (json is null)
-			{
-				Monitor.Log($"Loading {asset} failed, using backup", LogLevel.Error);
-				json = new T();
-			}
-
-			return json;
 		}
 
 

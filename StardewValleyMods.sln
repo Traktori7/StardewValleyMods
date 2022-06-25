@@ -120,6 +120,7 @@ Global
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		TraktoriShared\TraktoriShared.projitems*{3b445bbe-162c-40cb-8070-b4ee6026c01c}*SharedItemsImports = 5
+		TraktoriShared\TraktoriShared.projitems*{932ec649-ea73-4ad8-89db-c5e8e56e5cca}*SharedItemsImports = 5
 		TraktoriShared\TraktoriShared.projitems*{eeb8cb95-183b-4722-9ba7-b656fbdfb71d}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

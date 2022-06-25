@@ -11,6 +11,8 @@ using StardewValley;
 using StardewValley.Monsters;
 using xTile;
 
+using TraktoriShared.Utils;
+
 
 namespace MiniDungeons
 {
@@ -53,6 +55,11 @@ namespace MiniDungeons
 		}
 
 
+		/// <summary>
+		/// The event handler for the SMAPI event AssetRequested.
+		/// Raised when an asset is being requested from the content pipeline.
+		/// The asset isn't necessarily being loaded yet (e.g. the game may be checking if it exists).
+		/// </summary>
 		private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
 		{
 			if (e.Name.StartsWith(Path.Combine("Maps", modIDPrefix)))
@@ -66,12 +73,22 @@ namespace MiniDungeons
 		}
 
 
+		/// <summary>
+		/// The event handler for the SMAPI event DayStarted.
+		/// Raised after the game begins a new day (including when the player loads a save).
+		/// </summary>
 		private void OnDayStarted(object? sender, DayStartedEventArgs e)
 		{
 			dungeonManager.PerformDayReset();
 		}
 
 
+		/// <summary>
+		/// The event handler for the SMAPI event GameLaunched.
+		/// Raised after the game is launched, right before the first update tick.
+		/// This happens once per game session (unrelated to loading saves). All mods are loaded and initialised at this point,
+		/// so this is a good time to set up mod integrations.
+		/// </summary>
 		private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
 		{
 			var configMenu = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
@@ -83,12 +100,20 @@ namespace MiniDungeons
 		}
 
 
+		/// <summary>
+		/// The event handler for the SMAPI event Saving.
+		/// Raised before the game begins writing data to the save file (except the initial save creation).
+		/// </summary>
 		private void OnSaving(object? sender, SavingEventArgs e)
 		{
 			dungeonManager.RemoveAddedLocations();
 		}
 
 
+		/// <summary>
+		/// The event handler for the SMAPI event Warped.
+		/// Raised after a player warps to a new location. NOTE: this event is currently only raised for the current player.
+		/// </summary>
 		private void OnWarped(object? sender, WarpedEventArgs e)
 		{
 			if (e.NewLocation is null)
@@ -100,6 +125,10 @@ namespace MiniDungeons
 		}
 
 
+		/// <summary>
+		/// The event handler for the SMAPI event NpcListChanged.
+		/// Raised after NPCs are added/removed in any location (including villagers, horses, Junimos, monsters, and pets).
+		/// </summary>
 		private void OnNpcListChanged(object? sender, NpcListChangedEventArgs e)
 		{
 			if (e.IsCurrentLocation && DungeonManager.IsLocationMiniDungeon(Game1.currentLocation))
@@ -123,46 +152,50 @@ namespace MiniDungeons
 				save: () => Helper.WriteConfig(config)
 			);
 
+			string enableNotification = "enable-notification";
 			configMenu.AddBoolOption(
 				mod: ModManifest,
-				name: () => i18n.Get("gmcm.enable-notification-label"),
-				tooltip: () => i18n.Get("gmcm.enable-notification-description"),
+				name: () => GetLabelTranslation(enableNotification),
+				tooltip: () => GetDescriptionTranslation(enableNotification),
 				getValue: () => config.enableHUDNotification,
 				setValue: (bool value) => config.enableHUDNotification = value
 			);
 
+			string dungeonLimit = "dungeon-limit";
 			configMenu.AddNumberOption(
 				mod: ModManifest,
-				name: () => i18n.Get("gmcm.dungeon-limit-label"),
-				tooltip: () => i18n.Get("gmcm.dungeon-limit-description"),
+				name: () => GetLabelTranslation(dungeonLimit),
+				tooltip: () => GetDescriptionTranslation(dungeonLimit),
 				getValue: () => config.maxNumberOfDungeonsPerDay,
 				setValue: (int value) => config.maxNumberOfDungeonsPerDay = value,
 				min: -1
 			);
 
+			string enableFightingChallenge = "enable-fighting-challenge";
 			configMenu.AddBoolOption(
 				mod: ModManifest,
-				name: () => i18n.Get("gmcm.enable-fighting-challenge-label"),
-				tooltip: () => i18n.Get("gmcm.enable-notiffighting-challengeication-description"),
+				name: () => GetLabelTranslation(enableFightingChallenge),
+				tooltip: () => GetDescriptionTranslation(enableFightingChallenge),
 				getValue: () => config.enableFightingchallenges,
 				setValue: (bool value) => config.enableFightingchallenges = value
 			);
 
-			// TODO: This doesn't seem to work at all
 			foreach (Dungeon dungeon in dungeonManager.dungeons)
 			{
+				string enableDungeon = "enable-dungeon";
 				configMenu.AddBoolOption(
 					mod: ModManifest,
-					name: () => i18n.Get("gmcm.enable-dungeon-label", new {dungeonName = dungeon.Name}),
-					tooltip: () => i18n.Get("gmcm.enable-dungeon-description", new { dungeonName = dungeon.Name }),
+					name: () => GetLabelTranslation(enableDungeon, new {dungeonName = dungeon.Name}),
+					tooltip: () => GetDescriptionTranslation(enableDungeon, new { dungeonName = dungeon.Name }),
 					getValue: () => config.enabledDungeons[dungeon.Name],
 					setValue: (bool value) => config.enabledDungeons[dungeon.Name] = value
 				);
 
+				string dungeonSpawnChance = "dungeon-spawn-chance";
 				configMenu.AddNumberOption(
 					mod: ModManifest,
-					name: () => i18n.Get("gmcm.dungeon-spawn-chance-label", new { dungeonName = dungeon.Name }),
-					tooltip: () => i18n.Get("gmcm.dungeon-spawn-chance-description", new { dungeonName = dungeon.Name, defaultChance = dungeon.SpawnChance }),
+					name: () => GetLabelTranslation(dungeonSpawnChance, new { dungeonName = dungeon.Name }),
+					tooltip: () => GetDescriptionTranslation(dungeonSpawnChance, new { dungeonName = dungeon.Name, defaultChance = dungeon.SpawnChance }),
 					getValue: () => config.dungeonSpawnChances[dungeon.Name],
 					setValue: (float value) => config.dungeonSpawnChances[dungeon.Name] = value,
 					min: 0f,
@@ -173,6 +206,9 @@ namespace MiniDungeons
 		}
 
 
+		/// <summary>
+		/// Initializes the config by removing values that don't match currently loaded dungeons.
+		/// </summary>
 		private void InitializeConfig()
 		{
 			// Makes sure the dictionaries don't contain any old keys, but keeps the old values
@@ -215,6 +251,9 @@ namespace MiniDungeons
 		}
 
 
+		/// <summary>
+		/// Reads the challenge and dungeon datas. Initializes the dungeon manager with the data.
+		/// </summary>
 		private void ReadData()
 		{
 			dungeonManager = new DungeonManager();
@@ -227,46 +266,48 @@ namespace MiniDungeons
 
 
 		/// <summary>
-		/// Reads the challenge data json files
+		/// Reads the challenge data json files.
 		/// </summary>
 		/// <returns>Returns the dictionary of challenge data, or an empty one if the reading failed.</returns>
 		private Dictionary<string, Data.Challenge> ReadChallengeData()
 		{
-			return ReadListToDict<Data.Challenge>(challengeDataPath, x => x.ChallengeName);
+			return GenericHelper.ReadListAssetToDict<Data.Challenge>(challengeDataPath, Helper.Data, Monitor, x => x.ChallengeName);
 		}
 
 
 		/// <summary>
-		/// Reads the dungeon data json
+		/// Reads the dungeon data json into a dictionary with the dungeons names used as the keys.
 		/// </summary>
 		/// <returns>Returns the dictionary of dungeon data, or an empty one if the reading failed.</returns>
 		private Dictionary<string, Data.Dungeon> ReadDungeonData()
 		{
-			return ReadListToDict<Data.Dungeon>(dungeonDataPath, x => x.DungeonName);
+			return GenericHelper.ReadListAssetToDict<Data.Dungeon>(dungeonDataPath, Helper.Data, Monitor, x => x.DungeonName);
 		}
 
 
-		private Dictionary<string, TData> ReadListToDict<TData>(string path, Func<TData, string> keySelector) where TData : class, new()
+		private static Translation GetLabelTranslation(string optionName, object? tokens = null)
 		{
-			try
+			if (tokens is not null)
 			{
-				List<TData>? data = Helper.Data.ReadJsonFile<List<TData>>(path);
-
-				if (data is not null)
-				{
-					return data.ToDictionary(keySelector);
-				}
-				else
-				{
-					Monitor.Log($"Reading {path} data failed", LogLevel.Error);
-				}
+				return i18n.Get($"gmcm.{optionName}-label", tokens);
 			}
-			catch (Exception ex)
+			else
 			{
-				Monitor.Log(ex.ToString(), LogLevel.Error);
+				return i18n.Get($"gmcm.{optionName}-label");
 			}
+		}
 
-			return new Dictionary<string, TData>();
+
+		private static Translation GetDescriptionTranslation(string optionName, object? tokens = null)
+		{
+			if (tokens is not null)
+			{
+				return i18n.Get($"gmcm.{optionName}-description", tokens);
+			}
+			else
+			{
+				return i18n.Get($"gmcm.{optionName}-description");
+			}
 		}
 	}
 }

@@ -267,6 +267,8 @@ namespace MiniDungeons
 
 		public void SpawnDungeonPortal(Dungeon dungeon, GameLocation location)
 		{
+			// TODO: Switch away from using warps, since apparently NPCs can use them (confirm).
+			// Use some sort of Action with a confirmation box/way to remove the portal?
 			DungeonLocation dungeonLocation = dungeon.CreateDungeonLocation();
 
 			// TODO: Test value for the warp, since custom locations might need something special to warp to
@@ -336,7 +338,7 @@ namespace MiniDungeons
 		private static void SpawnPortalSprite(GameLocation location, Warp warp)
 		{
 			int sizeCorrectionMultiplier = 4;
-			float animationIntervalInMillisecond = 1000f;
+			float animationIntervalInMilliseconds = 1000f;
 			int animationLenght = 4;
 			int loops = 1000000000;
 			// Y-coordinate needs to be 1 less that the portal position, OR change the portal to be 1x1?
@@ -344,7 +346,7 @@ namespace MiniDungeons
 
 			TemporaryAnimatedSprite sprite = new TemporaryAnimatedSprite(ModEntry.portalAssetName,
 				new Rectangle(0, 0, 16, 32),
-				animationIntervalInMillisecond,
+				animationIntervalInMilliseconds,
 				animationLenght,
 				loops,
 				portalPosition,
