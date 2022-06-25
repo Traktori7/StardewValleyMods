@@ -88,6 +88,8 @@ namespace QualityScrubber
 					// If input is honey, copy honey type
 					if (outputObject.Name.Contains("Honey"))
 					{
+						// TODO: Apparently honeyType isn't used anymore?
+						// There's a savefix SaveGame.SaveFixes.TransferHoneyTypeToPreserves that switches to preservedParentSheetIndex
 						outputObject.honeyType.Value = inputObject.honeyType.Value;
 
 						if (config.TurnHoneyIntoGenericHoney)

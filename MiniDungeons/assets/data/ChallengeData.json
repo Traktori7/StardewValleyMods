@@ -1,7 +1,6 @@
 [
 	{
 		"ChallengeName": "FightSlime1",
-		"Timer": -1,
 		"MonsterWaves": [
 			{
 				"Monsters": [
@@ -20,7 +19,6 @@
 				]
 			}
 		],
-		"TimerBeforeNextWaveSpawns": -1,
 		"SpawnPoints": [
 			{
 				"X": 6,
@@ -31,19 +29,19 @@
 				"Y": 23
 			}
 		],
-		"Rewards": [
+		"LootBundles": [
 			{
-				"ItemID": "Large Milk"
+				"LootTables": [ "SpringSummerCrops", "SpringForage" ],
+				"Drops": 2
 			},
 			{
-				"ItemID": "Green Bean",
-				"StackSize": 2
+				"LootTables": [ "Fruits", "Flowers" ],
+				"Drops": 1
 			}
 		]
 	},
 	{
 		"ChallengeName": "Collect1",
-		"Timer": -1,
 		"SpawnPoints": [
 			{
 				"X": 6,

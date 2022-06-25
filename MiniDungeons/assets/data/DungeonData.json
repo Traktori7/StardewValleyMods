@@ -11,14 +11,16 @@
 				"SpawnWeight": 1,
 				"EntryX": 8,
 				"EntryY": 26,
-				"Challenge": "FightSlime1"
-			},
-			{
-				"MapFile": "SeedShop.tmx",
-				"SpawnWeight": 1,
-				"EntryX": 8,
-				"EntryY": 26,
-				"Challenge": "Collect1"
+				"Challenges": [
+					{
+						"Challenge": "FightSlime1",
+						"Weight": 2
+					},
+					{
+						"Challenge": "Collect1",
+						"Weight": 1
+					}
+				]
 			}
 		]
 	}

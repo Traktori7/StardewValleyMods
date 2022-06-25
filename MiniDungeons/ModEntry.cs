@@ -37,6 +37,11 @@ namespace MiniDungeons
 
 		public static readonly string actionName = $"{modIDPrefix}.Portal";
 
+		// TODO: Dictionary keys are the context tags, the integers are the objectInformation keys of all items that have that context tag.
+		// Loop through ObjectContextTags + add manually atleast category tags.
+		// JsonAssets inserts its own tags there. That way we catch modded items + modded tags.
+		internal readonly Dictionary<string, List<int>> contextTagData = new Dictionary<string, List<int>>();
+
 
 		/// <summary>The mod entry point, called after the mod is first loaded.</summary>
 		/// <param name="helper">Provides simplified APIs for writing mods.</param>
