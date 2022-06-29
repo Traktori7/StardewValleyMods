@@ -79,6 +79,7 @@ namespace MiniDungeons
 		/// <remarks>New location is quaranteed to be not null</remarks>
 		public static void PlayerWarped(WarpedEventArgs e)
 		{
+			// TODO: Does this get triggered with cutscene events?
 			// TODO: Consider pattern matching (location is Dungeon dungeon) if the method isn't going to be any more complex
 			if (IsLocationMiniDungeon(e.NewLocation))
 			{

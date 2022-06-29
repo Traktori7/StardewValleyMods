@@ -64,14 +64,13 @@ namespace TraktoriShared.Utils
 		/// <param name="monitor">The monitor to log into.</param>
 		/// <param name="keySelector">A function to extract a key from each element.</param>
 		/// <returns>Returns a dictionary of deserialized models, or empty dictionary.</returns>
-		internal static Dictionary<string, TData> ReadListAssetToDict<TData>(string assetPath, IDataHelper dataHelper, IMonitor monitor, Func<TData, string> keySelector) where TData : class, new()
+		internal static Dictionary<string, TData> ReadListAssetToDict<TData>(string assetPath, IDataHelper dataHelper, IMonitor monitor, Func<TData, string> keySelector) where TData : class
 		{
 			try
 			{
 				List<TData> data = LoadAssetOrDefault<List<TData>>(assetPath, dataHelper, monitor);
 
 				return data.ToDictionary(keySelector);
-
 			}
 			catch (Exception ex)
 			{
