@@ -1,0 +1,10 @@
+{
+	"Name": "Endgame Bundles",
+	"Author": "Traktori",
+	"Version": "1.0.0",
+	"Description": "Adds extra bundle system after CC completion",
+	"UniqueID": "Traktori.EndgameBundles",
+	"EntryDll": "EndgameBundles.dll",
+	"MinimumApiVersion": "3.14.0",
+	"UpdateKeys": [ "" ]
+}

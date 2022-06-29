@@ -11,6 +11,8 @@ using StardewValley.Buildings;
 using StardewValley.Menus;
 using SObject = StardewValley.Object;
 
+using TraktoriShared.Utils;
+
 
 namespace IndustrialFurnace
 {
@@ -57,6 +59,9 @@ namespace IndustrialFurnace
 		private SmeltingRulesContainer newSmeltingRules = null!;
 		private ITranslationHelper i18n = null!;
 
+		// The dictionary that temporarily holds the loaded rules that get parsed into the SmeltingRulesContainer
+		private Dictionary<string, string> smeltingRulesDictionary = null!;
+
 		// Mod support
 		private bool modInstantBuildingsFound = false;
 
@@ -95,26 +100,23 @@ namespace IndustrialFurnace
 		}
 
 
-		
-
-
 		public override object GetApi()
 		{
 			return new IndustrialFurnaceAPI(this);
 		}
 
 
-		/// <summary>Sends a message for all connected players the updated save data. TODO: Exclude the sender?</summary>
+		/// <summary>Sends a message for all connected players the updated save data.</summary>
 		public void SendUpdateMessage()
 		{
-			// Refresh the save data for the multiplayer message and send message to all players, including host (currently no harm in doing so)
+			// Refresh the save data for the multiplayer message and send message to all other players
 			InitializeSaveData();
 			Helper.Multiplayer.SendMessage(modSaveData, saveDataRefreshedMessage, new[] { ModManifest.UniqueID });
 		}
 
 
 		/// <summary>Checks if the building is an industrial furnace based on its buildingType</summary>
-		public static bool IsBuildingIndustrialFurnace(Building building)
+		public static bool MainIsBuildingIndustrialFurnace(Building building)
 		{
 			return building.buildingType.Value.Equals(furnaceBuildingType);
 		}
@@ -188,27 +190,25 @@ namespace IndustrialFurnace
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationSpriteName))
 			{
-				//e.LoadFromModFile<Texture2D>(smokeAnimationSpritePath, AssetLoadPriority.Low);
 				// Create a right sized dummy texture since its width can't be resized by CP
 				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationSpriteName))
 			{
-				//e.LoadFromModFile<Texture2D>(fireAnimationSpritePath, AssetLoadPriority.Low);
 				// Create a right sized dummy texture since its width can't be resized by CP
 				e.LoadFrom(() => new Texture2D(Game1.graphics.GraphicsDevice, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(smeltingRulesDataName))
 			{
-				e.LoadFrom(() => LoadJson<SmeltingRulesContainer>(smeltingRulesDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<Dictionary<string,string>>(smeltingRulesDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
-				e.LoadFrom(() => LoadJson<SmokeAnimationData>(smokeAnimationDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<SmokeAnimationData>(smokeAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationDataName))
 			{
-				e.LoadFrom(() => LoadJson<FireAnimationData>(fireAnimationDataPath), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<FireAnimationData>(fireAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.NameWithoutLocale.IsEquivalentTo(blueprintsPath))
 			{
@@ -217,25 +217,14 @@ namespace IndustrialFurnace
 					var dictionary = asset.AsDictionary<string, string>();
 
 					// TODO: Use the name specified in the blueprint?
-					blueprintData = Helper.Data.ReadJsonFile<BlueprintData>(blueprintDataPath)!;
+					blueprintData = GenericHelper.LoadAsset<BlueprintData>(blueprintDataPath, Helper.Data, Monitor);
 
-					dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n!);
+					if (blueprintData is not null)
+					{
+						dictionary.Data[furnaceBuildingType] = blueprintData.ToBlueprintString(i18n);
+					}
 				});
 			}
-		}
-
-
-		internal T LoadJson<T>(string asset) where T : class, new()
-		{
-			T? json = Helper.Data.ReadJsonFile<T>(asset);
-
-			if (json is null)
-			{
-				Monitor.Log($"Loading {asset} failed, using backup", LogLevel.Error);
-				json = new T();
-			}
-
-			return json;
 		}
 
 
@@ -477,10 +466,13 @@ namespace IndustrialFurnace
 		}
 
 
-		/// <summary>Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).</summary>
+		/// <summary>
+		/// Raised before/after the game reads data from a save file and initialises the world (including when day one starts on a new save).
+		/// </summary>
 		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
+			//newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
+			smeltingRulesDictionary = Helper.GameContent.Load<Dictionary<string,string>>(smeltingRulesDataName);
 
 			CheckSmeltingRules();
 
@@ -606,7 +598,7 @@ namespace IndustrialFurnace
 			// Add added furnaces to the controller list
 			foreach (Building building in e.Added)
 			{
-				if (IsBuildingIndustrialFurnace(building))
+				if (MainIsBuildingIndustrialFurnace(building))
 				{
 					// Add the controller that takes care of the functionality of the furnace
 					IndustrialFurnaceController controller = new IndustrialFurnaceController(furnacesBuilt.Value, false, this)
@@ -622,7 +614,7 @@ namespace IndustrialFurnace
 			// Remove destroyed furnaces from the controller list
 			foreach (Building building in e.Removed)
 			{
-				if (IsBuildingIndustrialFurnace(building))
+				if (MainIsBuildingIndustrialFurnace(building))
 				{
 					int index = GetIndexOfFurnaceControllerWithTag(building.maxOccupants.Value);
 
@@ -689,7 +681,8 @@ namespace IndustrialFurnace
 
 
 		/// <summary>Raised after the game world is drawn to the sprite patch, before it's rendered to the screen.
-		/// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.</summary>
+		/// Content drawn to the sprite batch at this point will be drawn over the world, but under any active menu, HUD elements, or cursor.
+		/// </summary>
 		private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
 		{
 			
@@ -747,7 +740,7 @@ namespace IndustrialFurnace
 			// Items can be placed only if the furnace is NOT on
 			if (furnace.CurrentlyOn)
 			{
-				DisplayMessage(i18n.Get("message.furnace-running"), 3, "cancel");
+				DisplayHudMessage(i18n.Get("message.furnace-running"), HUDMessage.error_type, "cancel");
 				return false;
 			}
 
@@ -783,7 +776,7 @@ namespace IndustrialFurnace
 				}
 				else
 				{
-					DisplayMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), 3, "cancel");
+					DisplayHudMessage(i18n.Get("message.need-more-ore", new { oreAmount = rule.InputItemAmount }), HUDMessage.error_type, "cancel");
 					return false;
 				}
 			}
@@ -817,19 +810,19 @@ namespace IndustrialFurnace
 					}
 					else
 					{
-						DisplayMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), 3, "cancel");
+						DisplayHudMessage(i18n.Get("message.more-coal", new { coalAmount = config.CoalAmount }), HUDMessage.error_type, "cancel");
 						return false;
 					}
 				}
 				else
 				{
-					DisplayMessage(i18n.Get("message.place-something-first"), 3, "cancel");
+					DisplayHudMessage(i18n.Get("message.place-something-first"), HUDMessage.error_type, "cancel");
 					return false;
 				}
 			}
 			else
 			{
-				DisplayMessage(i18n.Get("message.cant-smelt-this"), 3, "cancel");
+				DisplayHudMessage(i18n.Get("message.cant-smelt-this"), HUDMessage.error_type, "cancel");
 				return false;
 			}
 		}
@@ -1023,7 +1016,7 @@ namespace IndustrialFurnace
 		/// <param name="s">Displayed message</param>
 		/// <param name="type">Message type</param>
 		/// <param name="sound">Sound effect</param>
-		private static void DisplayMessage(string s, int type, string? sound = null)
+		private static void DisplayHudMessage(string s, int type, string? sound = null)
 		{
 			Game1.addHUDMessage(new HUDMessage(s, type));
 
@@ -1037,7 +1030,33 @@ namespace IndustrialFurnace
 		/// <summary>Remove rules that depend on not installed mods</summary>
 		private void CheckSmeltingRules()
 		{
-			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
+			newSmeltingRules = new(smeltingRulesDictionary, Monitor);
+			//newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !Helper.ModRegistry.IsLoaded(item.RequiredModID));
+			newSmeltingRules.SmeltingRules.RemoveAll(item => item.RequiredModID is not null && !IsAllModIDsLoaded(item.RequiredModID));
+		}
+
+
+		/// <summary>
+		/// Check if all of the mod IDs in the array are loaded
+		/// </summary>
+		/// <param name="s">The array of mod ID strings</param>
+		/// <returns>If all of the mod IDs were loaded</returns>
+		private bool IsAllModIDsLoaded(string[] s)
+		{
+			// This should never happen. The array should always be either null or have elements, but let's check against it and log it just in case
+			if (s.Length == 0)
+			{
+				Monitor.Log("Empty list of mod ids encountered", LogLevel.Warn);
+				return false;
+			}
+
+			for (int i = 0; i < s.Length; i++)
+			{
+				if (!Helper.ModRegistry.IsLoaded(s[i]))
+					return false;
+			}
+
+			return true;
 		}
 
 
@@ -1074,7 +1093,7 @@ namespace IndustrialFurnace
 			// Repopulate the list of furnaces, only checks the farm!
 			foreach (Building building in Game1.getFarm().buildings)
 			{
-				if (IsBuildingIndustrialFurnace(building))
+				if (MainIsBuildingIndustrialFurnace(building))
 				{
 					for (int i = 0; i < furnaces.Value.Count; i++)
 					{
@@ -1094,7 +1113,7 @@ namespace IndustrialFurnace
 
 				if (removed > 0)
 				{
-					Monitor.Log("Removed " + removed + " corrupted furnace controllers from the save file.", LogLevel.Warn);
+					Monitor.Log($"Removed {removed} corrupted furnace controllers from the save file.", LogLevel.Warn);
 
 					// Refresh the modSaveData
 					modSaveData.ParseControllersToModSaveData(furnaces.Value);

@@ -1,0 +1,27 @@
+[
+	{
+		"DungeonName": "SeedShopDungeon",
+		"SpawnMapName": "SeedShop",
+		"SpawnChance": 1,
+		"PortalX": 8,
+		"PortalY": 26,
+		"DungeonMaps": [
+			{
+				"MapFile": "SeedShop.tmx",
+				"SpawnWeight": 1,
+				"EntryX": 8,
+				"EntryY": 26,
+				"Challenges": [
+					{
+						"Challenge": "FightSlime1",
+						"Weight": 2
+					},
+					{
+						"Challenge": "Collect1",
+						"Weight": 1
+					}
+				]
+			}
+		]
+	}
+]

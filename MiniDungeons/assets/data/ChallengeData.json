@@ -1,0 +1,62 @@
+[
+	{
+		"ChallengeName": "FightSlime1",
+		"MonsterWaves": [
+			{
+				"Monsters": [
+					{
+						"MonsterName": "GreenSlime",
+						"SpawnAmount": 1
+					}
+				]
+			},
+			{
+				"Monsters": [
+					{
+						"MonsterName": "GreenSlime",
+						"SpawnAmount": 2
+					}
+				]
+			}
+		],
+		"SpawnPoints": [
+			{
+				"X": 6,
+				"Y": 23
+			},
+			{
+				"X": 7,
+				"Y": 23
+			}
+		],
+		"LootBundles": [
+			{
+				"LootTables": [ "SpringSummerCrops", "SpringForage" ],
+				"Drops": 2
+			},
+			{
+				"LootTables": [ "Fruits", "Flowers" ],
+				"Drops": 1
+			}
+		]
+	},
+	{
+		"ChallengeName": "Collect1",
+		"SpawnPoints": [
+			{
+				"X": 6,
+				"Y": 23
+			},
+			{
+				"X": 7,
+				"Y": 23
+			}
+		],
+		"SpawnedObjects": [
+			{
+				"ObjectID": "Stone",
+				"SpawnedAmount": 2
+			}
+		]
+	}
+]

@@ -174,15 +174,50 @@ namespace IndustrialFurnace
 
 	/// <summary>
 	/// The data class for the smelting rules.
+	/// 
+	/// NOTE: Relying on RequiredModID doesn't work if the item is provided by Json Assets.
+	/// The token evaluation {{ItemId: Item name}} returns an error for unknown names and blocks
+	/// the Content Patcher edit.
 	/// </summary>
 	public class SmeltingRulesContainer
 	{
 		public List<SmeltingRule> SmeltingRules { get; set; }
 
 
-		public SmeltingRulesContainer()
+		public SmeltingRulesContainer(Dictionary<string, string> dict, IMonitor monitor)
 		{
 			SmeltingRules = new List<SmeltingRule>();
+
+			foreach (var kvp in dict)
+			{
+				SmeltingRule smeltingRule = new();
+
+				// Try to parse the smelting rule. If it fails, print error and skip.
+				try
+				{
+					string[] s = kvp.Value.Split('/');
+					
+					smeltingRule.InputItemID = int.Parse(kvp.Key);
+					smeltingRule.InputItemAmount = int.Parse(s[0]);
+					smeltingRule.OutputItemID = int.Parse(s[1]);
+					smeltingRule.OutputItemAmount = int.Parse(s[2]);
+
+					// The fourth entry is space delimited list of required mod IDs
+					if (s[3].Length > 0)
+					{
+						string[] modIDs = s[3].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+						smeltingRule.RequiredModID = modIDs.Length > 0 ? modIDs : null;
+					}
+				}
+				catch (Exception ex)
+				{
+					monitor.Log("Mod failed while parsing smelting rules. Ignoring the faulty rule.", LogLevel.Error);
+					monitor.Log(ex.ToString(), LogLevel.Error);
+					continue;
+				}
+				
+				SmeltingRules.Add(smeltingRule);
+			}
 		}
 
 
@@ -207,13 +242,11 @@ namespace IndustrialFurnace
 	/// </summary>
 	public class SmeltingRule
 	{
-		public string? InputItemName { get; set; }
 		public int InputItemID { get; set; }
 		public int InputItemAmount { get; set; }
-		public string? OutputItemName { get; set; }
 		public int OutputItemID { get; set; }
 		public int OutputItemAmount { get; set; }
-		public string? RequiredModID { get; set; }
+		public string[]? RequiredModID { get; set; }
 	}
 
 

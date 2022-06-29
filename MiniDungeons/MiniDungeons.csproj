@@ -1,17 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 <PropertyGroup>
-	<AssemblyName>IndustrialFurnace</AssemblyName>
-	<RootNamespace>IndustrialFurnace</RootNamespace>
 	<TargetFramework>net5.0</TargetFramework>
 	<Nullable>enable</Nullable>
+	<EnableHarmony>true</EnableHarmony>
 </PropertyGroup>
-
-<ItemGroup>
-	<Compile Remove="Properties\**" />
-	<EmbeddedResource Remove="Properties\**" />
-	<None Remove="Properties\**" />
-</ItemGroup>
 
 <ItemGroup>
 	<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.0.1" />
