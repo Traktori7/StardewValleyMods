@@ -7,7 +7,7 @@
 
 		public RequestSaveData(long playerID)
 		{
-			this.PlayerID = playerID;
+			PlayerID = playerID;
 		}
 	}
 }

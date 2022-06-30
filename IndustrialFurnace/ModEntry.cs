@@ -31,7 +31,7 @@ namespace IndustrialFurnace
 
 		// Texture strings
 		// I think only this one needs to be normalized since it points to an actual file path to make it work on linux
-		private readonly string defaultAssetName = PathUtilities.NormalizeAssetName("Buildings/" + furnaceBuildingType);
+		private readonly string defaultAssetName = PathUtilities.NormalizeAssetName($"Buildings/{furnaceBuildingType}");
 		private readonly string assetOnName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/FurnaceOn");
 
 		private readonly string onPngName = "IndustrialFurnaceOn.png";
@@ -53,10 +53,10 @@ namespace IndustrialFurnace
 		private readonly string fireAnimationDataPath = Path.Combine("assets", "FireAnimation.json");
 
 		private ModConfig config = null!;
-		private ModSaveData? modSaveData;
-		private BlueprintData? blueprintData;
-		private SmokeAnimationData smokeAnimationData = null!;
-		private FireAnimationData fireAnimationData = null!;
+		private Data.ModSaveData? modSaveData;
+		private Data.Blueprint? blueprintData;
+		private Data.SmokeAnimation smokeAnimationData = null!;
+		private Data.FireAnimation fireAnimationData = null!;
 		private SmeltingRulesContainer newSmeltingRules = null!;
 		private ITranslationHelper i18n = null!;
 
@@ -205,11 +205,11 @@ namespace IndustrialFurnace
 			}
 			else if (e.Name.IsEquivalentTo(smokeAnimationDataName))
 			{
-				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<SmokeAnimationData>(smokeAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<Data.SmokeAnimation>(smokeAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.Name.IsEquivalentTo(fireAnimationDataName))
 			{
-				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<FireAnimationData>(fireAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
+				e.LoadFrom(() => GenericHelper.LoadAssetOrDefault<Data.FireAnimation>(fireAnimationDataPath, Helper.Data, Monitor), AssetLoadPriority.Low);
 			}
 			else if (e.NameWithoutLocale.IsEquivalentTo(blueprintsPath))
 			{
@@ -218,7 +218,7 @@ namespace IndustrialFurnace
 					var dictionary = asset.AsDictionary<string, string>();
 
 					// TODO: Use the name specified in the blueprint?
-					blueprintData = GenericHelper.LoadAsset<BlueprintData>(blueprintDataPath, Helper.Data, Monitor);
+					blueprintData = GenericHelper.LoadAsset<Data.Blueprint>(blueprintDataPath, Helper.Data, Monitor);
 
 					if (blueprintData is not null)
 					{
@@ -439,7 +439,7 @@ namespace IndustrialFurnace
 				if (e.Type == saveDataRefreshedMessage)
 				{
 					// Receive the save data
-					modSaveData = e.ReadAs<ModSaveData>();
+					modSaveData = e.ReadAs<Data.ModSaveData>();
 					// Refresh the furnace data
 					InitializeFurnaceControllers(false);
 
@@ -482,9 +482,9 @@ namespace IndustrialFurnace
 
 			CheckSmeltingRules();
 
-			smokeAnimationData = Helper.GameContent.Load<SmokeAnimationData>(smokeAnimationDataName);
+			smokeAnimationData = Helper.GameContent.Load<Data.SmokeAnimation>(smokeAnimationDataName);
 
-			fireAnimationData = Helper.GameContent.Load<FireAnimationData>(fireAnimationDataName);
+			fireAnimationData = Helper.GameContent.Load<Data.FireAnimation>(fireAnimationDataName);
 
 
 			// Only the person hosting the world loads the furnace controllers' state from the save
@@ -756,7 +756,7 @@ namespace IndustrialFurnace
 			if (heldItem is null) return false;
 
 			int objectId = heldItem.ParentSheetIndex;
-			SmeltingRule? rule = newSmeltingRules.GetSmeltingRuleFromInputID(objectId);
+			Data.SmeltingRule? rule = newSmeltingRules.GetSmeltingRuleFromInputID(objectId);
 
 			// Check if the object is on the smeltables list
 			if (rule is not null)
@@ -879,7 +879,7 @@ namespace IndustrialFurnace
 			// Now the dictionary consists of ItemID: Amount
 			foreach (KeyValuePair<int, int> kvp in smeltablesDictionary)
 			{
-				SmeltingRule? rule = newSmeltingRules.GetSmeltingRuleFromInputID(kvp.Key);
+				Data.SmeltingRule? rule = newSmeltingRules.GetSmeltingRuleFromInputID(kvp.Key);
 
 				if (rule is null)
 				{
@@ -1076,11 +1076,11 @@ namespace IndustrialFurnace
 
 			// Load the saved data. If not present, initialize new
 			if (readSaveData)
-				modSaveData = Helper.Data.ReadSaveData<ModSaveData>(controllerDataSaveKey);
+				modSaveData = Helper.Data.ReadSaveData<Data.ModSaveData>(controllerDataSaveKey);
 
 			if (modSaveData is null)
 			{
-				modSaveData = new ModSaveData();
+				modSaveData = new Data.ModSaveData();
 			}
 			else
 			{
@@ -1167,21 +1167,10 @@ namespace IndustrialFurnace
 			modSaveData.ParseControllersToModSaveData(furnaces.Value);
 		}
 
+
 		private IndustrialFurnaceController GetPerScreenFurnaceController(int index)
 		{
 			return furnaces.Value[index];
 		}
-	}
-
-
-	/// <summary>
-	/// Interface for the GenericModConfigMenu api.
-	/// </summary>
-	public interface IGenericModConfigMenuAPI
-	{
-		void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false);
-		void AddSectionTitle(IManifest mod, Func<string> text, Func<string>? tooltip = null);
-		void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string>? tooltip = null, string? fieldId = null);
-		void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string>? tooltip = null, int? min = null, int? max = null, int? interval = null, Func<int, string>? formatValue = null, string? fieldId = null);
 	}
 }
