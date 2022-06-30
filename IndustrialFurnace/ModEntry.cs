@@ -8,6 +8,7 @@ using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
+using StardewValley.Locations;
 using StardewValley.Menus;
 using SObject = StardewValley.Object;
 
@@ -240,9 +241,9 @@ namespace IndustrialFurnace
 			// Don't check anything if the animations aren't enabled
 			if (!config.EnableSmokeAnimation && !config.EnableFireAnimation) return;
 
-			GameLocation location = Game1.player.currentLocation;
+			GameLocation gameLocation = Game1.player.currentLocation;
 
-			if (location is not null && location.IsFarm && location.IsOutdoors)
+			if (gameLocation is not null && gameLocation is BuildableGameLocation buildableLocation)
 			{
 				for (int i = 0; i < furnaces.Value.Count; i++)
 				{
@@ -256,19 +257,24 @@ namespace IndustrialFurnace
 						continue;
 					}
 
+					if (!buildableLocation.buildings.Contains(controller.furnace))
+					{
+						continue;
+					}
+
 					int x = controller.furnace.tileX.Value;
 					int y = controller.furnace.tileY.Value;
 
 					if (config.EnableSmokeAnimation && e.IsMultipleOf(smokeAnimationData.SpawnFrequency * 60 / 1000))
 					{
-						location.temporarySprites.Add(CreateSmokeSprite(x, y));
+						buildableLocation.temporarySprites.Add(CreateSmokeSprite(x, y));
 					}
 					if (config.EnableFireAnimation && e.IsMultipleOf(fireAnimationData.SpawnFrequency * 60 / 1000))
 					{
 						// Spark only randomly
 						if (Game1.random.NextDouble() < fireAnimationData.SpawnChance)
 						{
-							location.temporarySprites.Add(CreateFireSprite(x, y));
+							buildableLocation.temporarySprites.Add(CreateFireSprite(x, y));
 						}
 
 						// Puff only randomlierly
@@ -503,8 +509,7 @@ namespace IndustrialFurnace
 			// This might fix the android issue, also lets the player place items with both clicks
 			if (e.Button.IsActionButton() || e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
 			{
-				// Assumes furnaces can be built only on the farm and checks if player is on the farm map
-				if (Game1.currentLocation is null || !Game1.currentLocation.IsFarm || !Game1.currentLocation.IsOutdoors)
+				if (Game1.currentLocation is null || Game1.currentLocation is not BuildableGameLocation)
 					return;
 
 				foreach (IndustrialFurnaceController furnace in furnaces.Value)
@@ -685,11 +690,13 @@ namespace IndustrialFurnace
 		/// </summary>
 		private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
 		{
-			
 			foreach (IndustrialFurnaceController controller in furnaces.Value)
 			{
-				// Assumes the furnace is built in the farm to avoid rendering the notification bubble anywhere else
-				if (!Game1.player.currentLocation.IsFarm || !Game1.player.currentLocation.IsOutdoors) continue;
+				if (Game1.currentLocation is not BuildableGameLocation buidableLocation
+					|| !buidableLocation.buildings.Contains(controller.furnace))
+				{
+					continue;
+				}
 
 				// This gets called before building list gets changed, so check if the furnace has been added yet
 				//int index = GetIndexOfFurnaceControllerWithTag(building.maxOccupants.Value);
@@ -958,8 +965,7 @@ namespace IndustrialFurnace
 
 
 		/// <summary>
-		/// Update the light sources for furnaces, but only of the player is on the farm map.
-		/// Assumes only farm can have built buildings!
+		/// Update the light sources for furnaces, but only of the player is on a BuildableGameLocation.
 		/// </summary>
 		private void UpdateFurnaceLights()
 		{
@@ -969,9 +975,11 @@ namespace IndustrialFurnace
 
 				if (controller.CurrentlyOn)
 				{
-					// Assumes only farm can have built buildings!
-					if (Game1.player.currentLocation != Game1.getFarm())
+					if (Game1.currentLocation is not BuildableGameLocation buildableLocation
+						|| !buildableLocation.buildings.Contains(controller.furnace))
+					{
 						continue;
+					}
 
 					if (controller.lightSource is null)
 					{
