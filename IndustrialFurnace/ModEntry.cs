@@ -37,9 +37,7 @@ namespace IndustrialFurnace
 		private readonly string onPngName = "IndustrialFurnaceOn.png";
 		private readonly string offPngName = "IndustrialFurnaceOff.png";
 
-		//private readonly string smokeAnimationSpritePath = Path.Combine("assets", "SmokeSprite.png");
 		private readonly string smokeAnimationSpriteName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/SmokeSprite");
-		//private readonly string fireAnimationSpritePath = Path.Combine("assets", "FireSprite.png");
 		private readonly string fireAnimationSpriteName = PathUtilities.NormalizeAssetName("Traktori.IndustrialFurnace/FireSprite");
 
 		// Data strings
@@ -306,9 +304,12 @@ namespace IndustrialFurnace
 				rectangle = new Rectangle(372, 1956, smokeAnimationData.SpriteSizeX, smokeAnimationData.SpriteSizeY);
 			}
 
-			sprite = new TemporaryAnimatedSprite(textureName, rectangle,
+			sprite = new TemporaryAnimatedSprite(textureName,
+				rectangle,
 				new Vector2(x * 64 + smokeAnimationData.SpawnXOffset, y * 64 + smokeAnimationData.SpawnYOffset),
-				false, 1f / 500f, Color.Gray)
+				false,
+				1f / 500f,
+				Color.Gray)
 			{
 				alpha = 0.75f,
 				motion = new Vector2(0.0f, -0.5f),
@@ -339,10 +340,19 @@ namespace IndustrialFurnace
 			{
 				sprite = new TemporaryAnimatedSprite(fireAnimationSpriteName,
 					new Rectangle(0, 0, fireAnimationData.SpriteSizeX, fireAnimationData.SpriteSizeY),
-					fireAnimationData.AnimationSpeed, fireAnimationData.AnimationLength, 10, pos, false,
+					fireAnimationData.AnimationSpeed,
+					fireAnimationData.AnimationLength,
+					10,
+					pos,
+					false,
 					false,
 					(float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0),
-					0.005f, Color.White, 1f, 0f, 0f, 0f)
+					0.005f,
+					Color.White,
+					1f,
+					0f,
+					0f,
+					0f)
 				{
 					light = true,
 					lightcolor = Color.Black
@@ -350,10 +360,17 @@ namespace IndustrialFurnace
 			}
 			else
 			{
-				sprite = new TemporaryAnimatedSprite(30, pos, Color.White, fireAnimationData.AnimationLength,
-					false, fireAnimationData.AnimationSpeed, 10, 64,
+				sprite = new TemporaryAnimatedSprite(30,
+					pos,
+					Color.White,
+					fireAnimationData.AnimationLength,
+					false,
+					fireAnimationData.AnimationSpeed,
+					10,
+					64,
 					(float)((y + 1.0) * 64.0 / 10000.0 + 9.99999974737875E-05 + (x + 1.0) * 64.0 / 10000.0),
-					-1, 0)
+					-1,
+					0)
 				{
 					alphaFade = 0.005f,
 					light = true,
@@ -464,7 +481,7 @@ namespace IndustrialFurnace
 		/// <summary>Raised before/after the game writes data to save file.</summary>
 		private void OnSaving(object? sender, SavingEventArgs e)
 		{
-			if (Game1.player.IsMainPlayer)
+			if (Context.IsMainPlayer)
 			{
 				InitializeSaveData();
 				Helper.Data.WriteSaveData(controllerDataSaveKey, modSaveData);
@@ -477,7 +494,6 @@ namespace IndustrialFurnace
 		/// </summary>
 		private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			//newSmeltingRules = Helper.GameContent.Load<SmeltingRulesContainer>(smeltingRulesDataName);
 			smeltingRulesDictionary = Helper.GameContent.Load<Dictionary<string,string>>(smeltingRulesDataName);
 
 			CheckSmeltingRules();
@@ -488,7 +504,7 @@ namespace IndustrialFurnace
 
 
 			// Only the person hosting the world loads the furnace controllers' state from the save
-			if (Game1.player.IsMainPlayer)
+			if (Context.IsMainPlayer)
 			{
 				InitializeFurnaceControllers(true);
 			}
@@ -539,12 +555,10 @@ namespace IndustrialFurnace
 					if (Game1.options.gamepadControls)
 					{
 						tile = new Vector2((int)Game1.player.GetToolLocation().X / 64, (int)Game1.player.GetToolLocation().Y / 64);
-						//Monitor.Log("Player pressed button " + e.Button.ToString() + " Tool Location is " + tile.ToString(), LogLevel.Debug);
 					}
 					else
 					{
 						tile = e.Cursor.GrabTile;
-						//Monitor.Log("Normal click detected on location " + tile.ToString(), LogLevel.Debug);
 
 						// Allow only clicks that happen when the cursor is above the furnace to prevent trapping android users
 						if (!building.occupiesTile(e.Cursor.Tile))
@@ -577,7 +591,7 @@ namespace IndustrialFurnace
 		/// <summary>The event called when the day starts.</summary>
 		private void OnDayStarted(object? sender, DayStartedEventArgs e)
 		{
-			if (Game1.player.IsMainPlayer)
+			if (Context.IsMainPlayer)
 			{
 				// Finish smelting items
 				foreach (IndustrialFurnaceController furnace in furnaces.Value)
@@ -1076,7 +1090,9 @@ namespace IndustrialFurnace
 
 			// Load the saved data. If not present, initialize new
 			if (readSaveData)
+			{
 				modSaveData = Helper.Data.ReadSaveData<Data.ModSaveData>(controllerDataSaveKey);
+			}
 
 			if (modSaveData is null)
 			{
@@ -1093,7 +1109,9 @@ namespace IndustrialFurnace
 			for (int i = 0; i < furnaces.Value.Count; i++)
 			{
 				if (GetPerScreenFurnaceController(i).ID > highestId)
+				{
 					highestId = GetPerScreenFurnaceController(i).ID;
+				}
 			}
 
 			furnacesBuilt.Value = highestId + 1;

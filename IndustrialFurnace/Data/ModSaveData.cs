@@ -40,33 +40,10 @@ namespace IndustrialFurnace.Data
 				FurnaceControllerId.Add(furnaces[i].ID);
 				FurnaceControllerCurrentlyOn.Add(furnaces[i].CurrentlyOn);
 
-				Dictionary<int, int> inputChest = new Dictionary<int, int>();
-
-				for (int j = 0; j < furnaces[i].input.items.Count; j++)
-				{
-					Item tempItem = furnaces[i].input.items[j];
-
-					if (inputChest.ContainsKey(tempItem.ParentSheetIndex))
-						inputChest[tempItem.ParentSheetIndex] += tempItem.Stack;
-					else
-						inputChest.Add(tempItem.ParentSheetIndex, tempItem.Stack);
-				}
-
+				Dictionary<int, int> inputChest = ConvertItemListToDictionary(furnaces[i].input.items);
 				FurnaceControllerInput.Add(inputChest);
 
-
-				Dictionary<int, int> outputChest = new Dictionary<int, int>();
-
-				for (int j = 0; j < furnaces[i].output.items.Count; j++)
-				{
-					Item tempItem = furnaces[i].output.items[j];
-
-					if (outputChest.ContainsKey(tempItem.ParentSheetIndex))
-						outputChest[tempItem.ParentSheetIndex] += tempItem.Stack;
-					else
-						outputChest.Add(tempItem.ParentSheetIndex, tempItem.Stack);
-				}
-
+				Dictionary<int, int> outputChest = ConvertItemListToDictionary(furnaces[i].output.items);
 				FurnaceControllerOutput.Add(outputChest);
 			}
 		}
@@ -76,20 +53,17 @@ namespace IndustrialFurnace.Data
 		public void ParseModSaveDataToControllers(List<IndustrialFurnaceController> furnaces, ModEntry mod)
 		{
 			// Assume the lists are equally as long
-
 			for (int i = 0; i < FurnaceControllerId.Count; i++)
 			{
 				IndustrialFurnaceController controller = new IndustrialFurnaceController(FurnaceControllerId[i], FurnaceControllerCurrentlyOn[i], mod);
 
-				Dictionary<int, int> tempDictionary = FurnaceControllerInput[i];
-				foreach (KeyValuePair<int, int> kvp in tempDictionary)
+				foreach (KeyValuePair<int, int> kvp in FurnaceControllerInput[i])
 				{
 					Object item = new Object(kvp.Key, kvp.Value);
 					controller.input.addItem(item);
 				}
 
-				tempDictionary = FurnaceControllerOutput[i];
-				foreach (KeyValuePair<int, int> kvp in tempDictionary)
+				foreach (KeyValuePair<int, int> kvp in FurnaceControllerOutput[i])
 				{
 					Object item = new Object(kvp.Key, kvp.Value);
 					controller.output.addItem(item);
@@ -97,6 +71,28 @@ namespace IndustrialFurnace.Data
 
 				furnaces.Add(controller);
 			}
+		}
+
+
+		private static Dictionary<int, int> ConvertItemListToDictionary(Netcode.NetObjectList<Item> items)
+		{
+			Dictionary<int, int> chestItems = new Dictionary<int, int>();
+
+			for (int j = 0; j < items.Count; j++)
+			{
+				Item tempItem = items[j];
+
+				if (chestItems.ContainsKey(tempItem.ParentSheetIndex))
+				{
+					chestItems[tempItem.ParentSheetIndex] += tempItem.Stack;
+				}
+				else
+				{
+					chestItems.Add(tempItem.ParentSheetIndex, tempItem.Stack);
+				}
+			}
+
+			return chestItems;
 		}
 	}
 }
